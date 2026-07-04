@@ -17,12 +17,13 @@ Binding rules: `{{AGENT_DIR}}/skills/backlog-campaign/references/backlog-campaig
    * **Quick**: Simple bugs, styling fixes, or documentation updates.
    * **Standard**: Multi-file changes, database/API schema modifications, or logic additions.
 3. **Analyze Codebase**: Search the repository using Grep/Glob/Read to inspect existing patterns, conventions, and touchpoints.
-4. **Enforce V-codes (Plan-time checks)**:
+4. **Verify Pareto Gating**: Estimate **Gain (1-10)** and **Effort (1-10)** for the planned implementation. Calculate $\text{Priority} = \text{Gain} \times (11 - \text{Effort})$. If $\text{Priority} < 30$, halt planning, set the issue to low ROI, and recommend archival in the queue findings.
+5. **Enforce V-codes (Plan-time checks)**:
    * `V-INT-02`: Do not plan utility re-implementations.
    * `V-KISS-01`: Keep the design minimal. Avoid premature abstractions.
    * `V-YAGNI-01`: No speculative features or unused generic classes.
-5. **Generate Plan Sections**: Write the plan file to `plans/<issue>.md`. Use the Marker Convention to highlight human-in-the-loop clarifications.
-6. **Verify Quality Gate**: Ensure all Touch-Paths are declared explicitly (`V-SCOPE-02`) and schema baseline changes are fully specified (`V-API-01`).
+6. **Generate Plan Sections**: Write the plan file to `plans/<issue>.md`. Use the Marker Convention to highlight human-in-the-loop clarifications.
+7. **Verify Quality Gate**: Ensure all Touch-Paths are declared explicitly (`V-SCOPE-02`) and schema baseline changes are fully specified (`V-API-01`).
 
 ---
 
@@ -85,8 +86,11 @@ track: quick | standard
 ...
 
 ## Task Breakdown
-- [ ] Task 1 (with any [NEEDS CLARIFICATION: ...] markers if needed)
-- [ ] Task 2
+- [ ] **TDD Baseline Verification**: Run `bun test` first to verify that all existing tests pass before modifying any codebase files.
+- [ ] **Write Failing Tests**: Author new unit/integration tests covering the feature/bug fix (`V-TEST-01/02`).
+- [ ] **Implement Minimal Logic**: Implement code changes restricted strictly to the Touch-Paths.
+- [ ] **Verify Integrity**: Verify all tests and lints are clean (`bun test`, `bun run lint`).
+- [ ] Task steps (with any [NEEDS CLARIFICATION: ...] markers if needed)
 
 ## Sprint Contract
 ...

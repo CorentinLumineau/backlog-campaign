@@ -1,0 +1,6 @@
+node_modules/
+.backlog-campaign/
+.DS_Store
+dist/
+build/
+*.log

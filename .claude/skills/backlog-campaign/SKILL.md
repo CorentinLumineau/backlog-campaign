@@ -1,9 +1,3 @@
----
-name: backlog-campaign
-description: Orchestrates backlog campaign until zero open issues and PRs. Multitask Mode entry via backlog-coordinator. Auto-syncs GitHub issues, clarifies/splits any size, five-phase lifecycle, V-code ledger. Use for finish the backlog, backlog campaign, /backlog-campaign, orchestrate issues, split issues.
-disable-model-invocation: true
----
-
 # Backlog Campaign
 
 Orchestrates issue implementation until the forge backlog is empty. Binding

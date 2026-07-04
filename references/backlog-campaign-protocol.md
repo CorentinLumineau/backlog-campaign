@@ -1,9 +1,3 @@
----
-description: Backlog campaign protocol — Multitask Mode, five phases, clarify all sizes, never-drop findings
-globs:
-alwaysApply: true
----
-
 # Backlog Campaign Protocol
 
 When this repo has `.backlog-campaign/config.json` or the user asks to

@@ -1,9 +1,3 @@
----
-description: V-code enforcement table for backlog campaign agents — restate in every worker prompt
-globs:
-alwaysApply: false
----
-
 # Backlog Campaign V-Codes
 
 Restate this table in every implementation and review agent prompt. Do not paste

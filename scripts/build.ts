@@ -12,37 +12,64 @@ const cleanDir = (dirPath: string) => {
   }
 };
 
-const compileContent = (content: string, agentDir: string, rulesPath: string): string => {
+// Strip Cursor-only MDC frontmatter (--- globs: / alwaysApply: ---) for non-Cursor targets.
+// The frontmatter block is kept as-is for Cursor; for Claude and skills.sh it is removed entirely
+// since those platforms do not understand Cursor rule metadata.
+const stripCursorFrontmatter = (content: string): string => {
+  return content.replace(/^---\n(?:.*\n)*?---\n\n?/, '');
+};
+
+// Enrich Cursor MDC frontmatter with glob patterns so the rule auto-applies on matching files.
+const enrichVcodesMdcGlobs = (content: string): string => {
+  return content.replace(
+    'globs:\nalwaysApply: false',
+    'globs: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.go", "**/*.py", "**/*.rs", "**/*.java", "**/*.c", "**/*.cpp", "**/*.cs"]\nalwaysApply: false'
+  );
+};
+
+type Target = 'cursor' | 'claude' | 'skills';
+
+const compileContent = (content: string, agentDir: string, rulesPath: string, target: Target): string => {
   let res = content.replaceAll('{{AGENT_DIR}}', agentDir);
   res = res.replaceAll('{{AGENT_DIR}}/rules/backlog-campaign-vcodes.md', rulesPath);
-  if (agentDir === 'skills/backlog-campaign') {
+  // skills.sh: collapse double-nesting that results from {{AGENT_DIR}}/skills/backlog-campaign/...
+  if (target === 'skills') {
     res = res.replaceAll('skills/backlog-campaign/skills/backlog-campaign/', 'skills/backlog-campaign/');
   }
   return res;
 };
 
-const processFile = (srcPath: string, destPath: string, agentDir: string, rulesPath: string, isVcodesMdc = false) => {
+const processFile = (
+  srcPath: string,
+  destPath: string,
+  agentDir: string,
+  rulesPath: string,
+  target: Target,
+  isVcodesMdc = false
+) => {
   let content = fs.readFileSync(srcPath, 'utf-8');
-  
-  if (isVcodesMdc) {
-    // Add glob patterns to the frontmatter of backlog-campaign-vcodes.mdc
-    content = content.replace(
-      'globs:\nalwaysApply: false',
-      'globs: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.go", "**/*.py", "**/*.rs", "**/*.java", "**/*.c", "**/*.cpp", "**/*.cs"]\nalwaysApply: false'
-    );
+
+  if (target === 'cursor') {
+    // Cursor: enrich vcodes .mdc with glob patterns
+    if (isVcodesMdc) {
+      content = enrichVcodesMdcGlobs(content);
+    }
+  } else {
+    // Claude / skills.sh: strip Cursor-only MDC frontmatter entirely
+    content = stripCursorFrontmatter(content);
   }
 
-  const compiled = compileContent(content, agentDir, rulesPath);
-  
+  const compiled = compileContent(content, agentDir, rulesPath, target);
+
   const destDir = path.dirname(destPath);
   if (!fs.existsSync(destDir)) {
     fs.mkdirSync(destDir, { recursive: true });
   }
-  
+
   fs.writeFileSync(destPath, compiled, 'utf-8');
 };
 
-const compileFolder = (srcSub: string, destParent: string, agentDir: string, rulesPath: string) => {
+const compileFolder = (srcSub: string, destParent: string, agentDir: string, rulesPath: string, target: Target) => {
   const fullSrc = path.join(srcDir, srcSub);
   if (!fs.existsSync(fullSrc)) return;
 
@@ -52,9 +79,9 @@ const compileFolder = (srcSub: string, destParent: string, agentDir: string, rul
     const destPath = path.join(destParent, file);
     const stat = fs.statSync(srcPath);
     if (stat.isDirectory()) {
-      compileFolder(path.join(srcSub, file), destPath, agentDir, rulesPath);
+      compileFolder(path.join(srcSub, file), destPath, agentDir, rulesPath, target);
     } else if (stat.isFile()) {
-      processFile(srcPath, destPath, agentDir, rulesPath);
+      processFile(srcPath, destPath, agentDir, rulesPath, target);
     }
   }
 };
@@ -81,18 +108,19 @@ processFile(
   path.join(srcDir, 'SKILL.md'),
   path.join(root, 'SKILL.md'),
   'skills/backlog-campaign',
-  'skills/backlog-campaign/references/backlog-campaign-vcodes.md'
+  'skills/backlog-campaign/references/backlog-campaign-vcodes.md',
+  'skills'
 );
 compileFolder(
   'references',
   path.join(root, 'references'),
   'skills/backlog-campaign',
-  'skills/backlog-campaign/references/backlog-campaign-vcodes.md'
+  'skills/backlog-campaign/references/backlog-campaign-vcodes.md',
+  'skills'
 );
 
-// 3. Compile Target B: Unified Root-level directories (natively read by Cursor submodule / Claude Plugin)
+// 3. Compile Target B: Cursor (root-level submodule layout + local .cursor/)
 console.log('Compiling Target B (Cursor Submodule / Claude Plugin root layouts)...');
-// rules/ containing .mdc files for Cursor
 const rulesList = ['backlog-campaign-protocol.md', 'backlog-campaign-state.md', 'backlog-campaign-vcodes.md'];
 for (const rule of rulesList) {
   const isVcodesMdc = rule === 'backlog-campaign-vcodes.md';
@@ -102,6 +130,7 @@ for (const rule of rulesList) {
     path.join(root, 'rules', destName),
     '.cursor',
     '.cursor/rules/backlog-campaign-vcodes.mdc',
+    'cursor',
     isVcodesMdc
   );
   processFile(
@@ -109,46 +138,51 @@ for (const rule of rulesList) {
     path.join(root, '.cursor', 'rules', destName),
     '.cursor',
     '.cursor/rules/backlog-campaign-vcodes.mdc',
+    'cursor',
     isVcodesMdc
   );
 }
-// agents/ containing .md files resolved for Cursor (.cursor)
 compileFolder(
   'agents',
   path.join(root, 'agents'),
   '.cursor',
-  '.cursor/rules/backlog-campaign-vcodes.mdc'
+  '.cursor/rules/backlog-campaign-vcodes.mdc',
+  'cursor'
 );
 compileFolder(
   'agents',
   path.join(root, '.cursor', 'agents'),
   '.cursor',
-  '.cursor/rules/backlog-campaign-vcodes.mdc'
+  '.cursor/rules/backlog-campaign-vcodes.mdc',
+  'cursor'
 );
-// skills/backlog-campaign/ containing SKILL.md and references/ resolved for Cursor (.cursor)
 processFile(
   path.join(srcDir, 'SKILL.md'),
   path.join(root, 'skills', 'backlog-campaign', 'SKILL.md'),
   '.cursor',
-  '.cursor/rules/backlog-campaign-vcodes.mdc'
+  '.cursor/rules/backlog-campaign-vcodes.mdc',
+  'cursor'
 );
 processFile(
   path.join(srcDir, 'SKILL.md'),
   path.join(root, '.cursor', 'skills', 'backlog-campaign', 'SKILL.md'),
   '.cursor',
-  '.cursor/rules/backlog-campaign-vcodes.mdc'
+  '.cursor/rules/backlog-campaign-vcodes.mdc',
+  'cursor'
 );
 compileFolder(
   'references',
   path.join(root, 'skills', 'backlog-campaign', 'references'),
   '.cursor',
-  '.cursor/rules/backlog-campaign-vcodes.mdc'
+  '.cursor/rules/backlog-campaign-vcodes.mdc',
+  'cursor'
 );
 compileFolder(
   'references',
   path.join(root, '.cursor', 'skills', 'backlog-campaign', 'references'),
   '.cursor',
-  '.cursor/rules/backlog-campaign-vcodes.mdc'
+  '.cursor/rules/backlog-campaign-vcodes.mdc',
+  'cursor'
 );
 
 // 4. Compile Target C: Claude Project-Level Native (.claude/)
@@ -157,27 +191,31 @@ compileFolder(
   'agents',
   path.join(root, '.claude', 'agents'),
   '.claude',
-  '.claude/rules/backlog-campaign-vcodes.md'
+  '.claude/rules/backlog-campaign-vcodes.md',
+  'claude'
 );
 for (const rule of rulesList) {
   processFile(
     path.join(srcDir, 'references', rule),
     path.join(root, '.claude', 'rules', rule),
     '.claude',
-    '.claude/rules/backlog-campaign-vcodes.md'
+    '.claude/rules/backlog-campaign-vcodes.md',
+    'claude'
   );
 }
 processFile(
   path.join(srcDir, 'SKILL.md'),
   path.join(root, '.claude', 'skills', 'backlog-campaign', 'SKILL.md'),
   '.claude',
-  '.claude/rules/backlog-campaign-vcodes.md'
+  '.claude/rules/backlog-campaign-vcodes.md',
+  'claude'
 );
 compileFolder(
   'references',
   path.join(root, '.claude', 'skills', 'backlog-campaign', 'references'),
   '.claude',
-  '.claude/rules/backlog-campaign-vcodes.md'
+  '.claude/rules/backlog-campaign-vcodes.md',
+  'claude'
 );
 
 // 5. Generate Claude Code Plugin Manifest (.claude-plugin/plugin.json)

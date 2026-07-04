@@ -1,10 +1,3 @@
----
-description: Queue and findings-ledger write protocol for backlog campaign state
-globs:
-  - .backlog-campaign/**
-alwaysApply: false
----
-
 # Backlog Campaign State
 
 Mutations to `.backlog-campaign/queue.json` and

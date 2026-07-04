@@ -29,11 +29,34 @@ const enrichVcodesMdcGlobs = (content: string): string => {
 
 type Target = 'cursor' | 'claude' | 'skills';
 
+// Strip platform-conditional blocks: {{#cursor}}...{{/cursor}} etc.
+// Keeps only the block matching the current compile target.
+const applyPlatformConditionals = (content: string, target: Target): string => {
+  const active = target === 'skills' ? 'skills' : target;
+  let res = content;
+  for (const platform of ['cursor', 'claude', 'skills'] as const) {
+    if (platform !== active) {
+      res = res.replace(new RegExp(`\\{\\{#${platform}\\}\\}[\\s\\S]*?\\{\\{/${platform}\\}\\}\\n?`, 'g'), '');
+    }
+  }
+  res = res.replace(new RegExp(`\\{\\{#${active}\\}\\}`, 'g'), '');
+  res = res.replace(new RegExp(`\\{\\{/${active}\\}\\}\\n?`, 'g'), '');
+  return res;
+};
+
 const compileContent = (content: string, agentDir: string, rulesPath: string, target: Target): string => {
-  let res = content.replaceAll('{{AGENT_DIR}}', agentDir);
-  res = res.replaceAll('{{AGENT_DIR}}/rules/backlog-campaign-vcodes.md', rulesPath);
-  // skills.sh: collapse double-nesting that results from {{AGENT_DIR}}/skills/backlog-campaign/...
-  if (target === 'skills') {
+  let res = content;
+  if (agentDir === '') {
+    // skills.sh root layout: flat references/ at repo root
+    res = res.replaceAll('{{AGENT_DIR}}/skills/backlog-campaign/', '');
+    res = res.replaceAll('{{AGENT_DIR}}', '');
+  } else {
+    res = res.replaceAll('{{AGENT_DIR}}', agentDir);
+  }
+  res = res.replaceAll('{{VCODES_PATH}}', rulesPath);
+  res = res.replaceAll('{{AGENT_DIR}}/skills/backlog-campaign/references/backlog-campaign-vcodes.md', rulesPath);
+  // skills.sh nested: collapse double-nesting from {{AGENT_DIR}}/skills/backlog-campaign/...
+  if (target === 'skills' && agentDir !== '') {
     res = res.replaceAll('skills/backlog-campaign/skills/backlog-campaign/', 'skills/backlog-campaign/');
   }
   return res;
@@ -59,6 +82,7 @@ const processFile = (
     content = stripCursorFrontmatter(content);
   }
 
+  content = applyPlatformConditionals(content, target);
   const compiled = compileContent(content, agentDir, rulesPath, target);
 
   const destDir = path.dirname(destPath);
@@ -107,15 +131,15 @@ console.log('Compiling Target A (skills.sh root-level)...');
 processFile(
   path.join(srcDir, 'SKILL.md'),
   path.join(root, 'SKILL.md'),
-  'skills/backlog-campaign',
-  'skills/backlog-campaign/references/backlog-campaign-vcodes.md',
+  '',
+  'references/backlog-campaign-vcodes.md',
   'skills'
 );
 compileFolder(
   'references',
   path.join(root, 'references'),
-  'skills/backlog-campaign',
-  'skills/backlog-campaign/references/backlog-campaign-vcodes.md',
+  '',
+  'references/backlog-campaign-vcodes.md',
   'skills'
 );
 

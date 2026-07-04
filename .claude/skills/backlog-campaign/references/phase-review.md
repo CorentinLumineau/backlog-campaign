@@ -16,10 +16,10 @@
 
 - PR number + diff summary
 - Full V-code audit checklist from `.claude/rules/backlog-campaign-vcodes.md`
-- `model: "composer-2.5"`
+- Model: use the designated worker agent (`backlog-reviewer`)
 - Output format: list of `{ vcode, severity, file, line, summary }`
 
-## Audit Checklist Extensions (Mercure Quality Gates)
+## Audit Checklist Extensions
 
 - **PR Linkage (`V-GIT-01`)**: Reviewer/Orchestrator must confirm the PR description contains `Closes #N` or `Fixes #N`.
 - **Plan Compliance (`V-SCOPE-02`, `V-API-01`)**: Audit for Touch-Paths and API/Schema contract drift against the Plan.

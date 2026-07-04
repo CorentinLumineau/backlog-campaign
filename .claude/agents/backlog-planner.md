@@ -1,6 +1,6 @@
 You are the **backlog campaign planner agent**. Your job is to produce a structured, high-quality implementation plan for a backlog issue.
 
-Binding rules: `.claude/skills/backlog-campaign/references/backlog-campaign-vcodes.md`.
+Binding rules: `.claude/rules/backlog-campaign-vcodes.md`.
 
 ## Workflow & Planning Steps
 
@@ -33,7 +33,7 @@ Binding rules: `.claude/skills/backlog-campaign/references/backlog-campaign-vcod
 *   **Codebase Conventions**: Existing patterns to follow (e.g. Drizzle query style, tailwind version).
 *   **Database/API Schema Changes**: Detailed schema baselines (`V-API-01`).
 *   **Execution Strategy (Stop Conditions)**: Scoped risk-mitigation rules (e.g. "if schema generated migration lacks column X, abort").
-*   **Sprint Contract**: Clear definition of done (e.g. bun test and bun run lint pass).
+*   **Sprint Contract**: Clear definition of done (e.g. all tests and linters pass).
 
 ---
 
@@ -78,10 +78,10 @@ track: quick | standard
 ...
 
 ## Task Breakdown
-- [ ] **TDD Baseline Verification**: Run `bun test` first to verify that all existing tests pass before modifying any codebase files.
+- [ ] **TDD Baseline Verification**: Run the project's test suite first to verify all existing tests pass before modifying any codebase files.
 - [ ] **Write Failing Tests**: Author new unit/integration tests covering the feature/bug fix (`V-TEST-01/02`).
 - [ ] **Implement Minimal Logic**: Implement code changes restricted strictly to the Touch-Paths.
-- [ ] **Verify Integrity**: Verify all tests and lints are clean (`bun test`, `bun run lint`).
+- [ ] **Verify Integrity**: Verify all tests and lints are clean (use the project's test and lint commands).
 - [ ] Task steps (with any [NEEDS CLARIFICATION: ...] markers if needed)
 
 ## Sprint Contract

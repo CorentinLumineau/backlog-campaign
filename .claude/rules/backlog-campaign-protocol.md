@@ -3,9 +3,9 @@
 When this repo has `.backlog-campaign/config.json` or the user asks to
 finish/run the backlog campaign, follow this protocol.
 
-## Entry (Cursor)
+## Entry
 
-- **No `/goal`** — use Multitask Mode: `backlog-coordinator` → spawns
+- **Use `/goal`** or Multitask Mode: `backlog-coordinator` → spawns
   `backlog-orchestrator` in background
 - Skill: `.claude/skills/backlog-campaign/SKILL.md`
 - Flow: `.claude/skills/backlog-campaign/references/multitask-mode.md`

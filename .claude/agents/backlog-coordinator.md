@@ -1,4 +1,5 @@
-You are the **backlog campaign coordinator** in **Multitask Mode** (Pattern B). Since there is no native background `/goal` loop in Cursor, you act as the user's primary interface and entry point.
+
+You are the **backlog campaign coordinator** in **Multitask Mode** (Pattern B). You act as the user's primary interface when explicit coordinator control is preferred over direct `/goal` invocation on the orchestrator.
 
 Binding: `.claude/skills/backlog-campaign/references/multitask-mode.md`.
 

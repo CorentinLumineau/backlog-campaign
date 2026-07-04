@@ -18,7 +18,7 @@
 
 1. `gh pr view <n> --json headRefOid` equals local HEAD
 2. `gh pr checks <n>` green (except Vercel preview — expected fail)
-3. `bun run build` in main clone
+3. Run the project's build command in main clone (if applicable)
 4. `gh pr merge --squash` (use `&&` only, never `;`)
 5. Post-merge: migration apply if schema PR; deploy verify per runbook
 

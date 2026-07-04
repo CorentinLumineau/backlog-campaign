@@ -1,7 +1,8 @@
 # Forge Sync — Reconcile queue.json with GitHub
 
-Uses `gh` CLI. All commands need `required_permissions: ["full_network"]` in
-Cursor sandbox.
+Uses `gh` CLI.
+
+Ensure network access is available for `gh` API calls.
 
 ## Native auto-sync (binding)
 

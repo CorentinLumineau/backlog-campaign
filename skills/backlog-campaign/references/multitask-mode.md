@@ -1,7 +1,8 @@
-# Multitask Mode — canonical Cursor entry (Pattern B)
+# Multitask Mode — Coordinator + Background Orchestrator (Pattern B)
 
-Cursor has **no `/goal` command**. The supported entry is **Multitask Mode**
-with a lightweight coordinator + background orchestrator.
+Use **Multitask Mode** when the platform does not have a native long-running
+goal loop (e.g. Cursor), or when you want explicit coordinator control.
+Claude Code users can use `/goal` directly on the `backlog-orchestrator` agent instead.
 
 ## Roles
 

@@ -27,7 +27,7 @@ Orchestrator may skip AskQuestion **only** when ALL true:
 
 1. Acceptance criteria are testable and complete in the issue body
 2. No product/UX/data ambiguity after reading issue + code touchpoints
-3. Single obvious approach; no DESIGN.md or schema impact
+3. Single obvious approach; no design docs or schema impact
 4. One reviewable PR scope (see issue-splitting.md)
 5. No open ledger BLOCK findings for this issue
 

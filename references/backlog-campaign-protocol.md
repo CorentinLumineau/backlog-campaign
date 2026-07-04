@@ -3,12 +3,11 @@
 When this repo has `.backlog-campaign/config.json` or the user asks to
 finish/run the backlog campaign, follow this protocol.
 
-## Entry (Cursor)
+## Entry
 
-- **No `/goal`** — use Multitask Mode: `backlog-coordinator` → spawns
-  `backlog-orchestrator` in background
-- Skill: `skills/backlog-campaign/SKILL.md`
-- Flow: `skills/backlog-campaign/references/multitask-mode.md`
+- Use Multitask Mode (coordinator + background orchestrator) or a direct orchestrator session
+- Skill: root `SKILL.md`
+- Flow: `references/multitask-mode.md`
 
 Coordinator routes only; orchestrator runs five phases; workers implement.
 
@@ -16,7 +15,7 @@ Coordinator routes only; orchestrator runs five phases; workers implement.
 
 Handle → Plan → Implement → Review → Loop.
 
-Playbooks: `skills/backlog-campaign/references/phase-*.md`
+Playbooks: `references/phase-*.md`
 
 ## Clarify — all issue sizes
 

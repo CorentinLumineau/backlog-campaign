@@ -9,7 +9,7 @@ alwaysApply: true
 When this repo has `.backlog-campaign/config.json` or the user asks to
 finish/run the backlog campaign, follow this protocol.
 
-## Entry (Cursor)
+## Entry
 
 - **No `/goal`** — use Multitask Mode: `backlog-coordinator` → spawns
   `backlog-orchestrator` in background

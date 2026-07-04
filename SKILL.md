@@ -1,7 +1,7 @@
 # Backlog Campaign
 
 Orchestrates issue implementation until the forge backlog is empty. Binding
-runbook: `skills/backlog-campaign/references/backlog-campaign-protocol.md`.
+runbook: `references/backlog-campaign-protocol.md`.
 
 ## Entry (Multitask Mode)
 
@@ -64,7 +64,7 @@ require `gh issue create` + `deferred_to_issue`.
 0. Auto-sync every turn
 1. Ready set → [queue-dag.md](references/queue-dag.md) — skip `blocked` (user gates)
 2. Per issue: handle → plan → **user gate if needed** → implement → review → loop
-3. Spawn workers: `model: "composer-2.5"`, `run_in_background: true`, one turn per batch
+3. Spawn workers via the designated agent files (`backlog-planner`, `backlog-implementer`, `backlog-reviewer`), `run_in_background: true`, one turn per batch
 4. End turn; triage completions → ledger → next phase
 
 **Do not spawn implement** while `status: blocked` with

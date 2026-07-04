@@ -1,16 +1,16 @@
 # Campaign Prompt — spawn text for orchestrator
 
 Use this verbatim (fill session handoff if resuming) when the **coordinator**
-spawns or resumes the `backlog-orchestrator` subagent. Cursor has no `/goal`
-command — this prompt replaces it.
+spawns or resumes the `backlog-orchestrator` subagent.
+
+Cursor has no `/goal` command — this prompt replaces it.
 
 ```
 Implement ALL open issues on the forge until zero open issues and zero open
-PRs remain, following documentation/runbooks/backlog-campaign-cursor.md and
-.cursor/skills/backlog-campaign/SKILL.md (binding).
+PRs remain, following .cursor/skills/backlog-campaign/SKILL.md (binding).
 
 Act as ORCHESTRATOR only:
-- Spawn Task subagents with model: "composer-2.5" for every worker
+- Spawn backlog-implementer and backlog-reviewer subagents for every worker task
 - NEVER implement large features in your main loop
 - Parallel worktrees for non-overlapping issues (2–4 per batch)
 - One reviewable PR per issue; review every PR; merge on LGTM
@@ -24,18 +24,16 @@ Clarify and split (ALL issue sizes):
 - Split into child issues when not one comfortable reviewable PR — not only epics
 - Get user sign-off on plan before implement workers when scope was unclear
 
-EVERY Task spawn MUST set model: "composer-2.5" explicitly.
-
 <SESSION_HANDOFF if resuming — else omit>
 ```
 
 ## Coordinator usage
 
+
 **First spawn:**
 ```
 Task(
   subagent_type: use backlog-orchestrator agent file,
-  model: "composer-2.5",
   run_in_background: true,
   prompt: <campaign-prompt above>
 )

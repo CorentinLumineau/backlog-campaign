@@ -1,13 +1,11 @@
 {
-  "repo": "CorentinLumineau/invest-portfolio",
+  "repo": "owner/repo-name",
   "target_branch": "main",
   "forge": "github",
   "parallel_max": 4,
-  "scratchpad_dir": "/tmp/invest-portfolio-campaign",
-  "model": "composer-2.5",
-  "runbook": "documentation/runbooks/backlog-campaign.md",
+  "scratchpad_dir": "/tmp/campaign",
   "size_label_prefix": "size:",
-  "default_touch_paths": ["lib/**", "app/**", "components/**"],
+  "default_touch_paths": ["src/**", "lib/**", "app/**"],
   "issue_labels": {
     "campaign": "campaign/backlog"
   },

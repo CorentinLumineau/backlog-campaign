@@ -9,10 +9,10 @@
 ## Notes file
 
 - [ ] `.github/releases/vX.Y.Z.md` exists
-- [ ] Product-focused (features, flow, install) — not internal audit changelog
+- [ ] **v0.1.0 only:** full product overview (goal, flow, agents, install)
+- [ ] **v0.2.0+:** diff-focused — only "What's new" section with changes since previous tag
 - [ ] No references to external projects
-- [ ] Install commands match README
-- [ ] Mermaid diagram renders (if included)
+- [ ] Links to v0.1.0 + README for full overview (minor/patch releases)
 
 ## Mechanical
 

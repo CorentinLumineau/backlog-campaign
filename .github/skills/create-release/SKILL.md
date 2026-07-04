@@ -36,7 +36,8 @@ CI reads `.github/releases/${TAG}.md` when the file exists; otherwise falls back
    ```
 3. **Edit notes** — `.github/releases/vX.Y.Z.md`
    - Use [TEMPLATE.md](../../releases/TEMPLATE.md) and the prior release as reference
-   - **Product-focused** for major/minor: features, flow, install — not internal changelog
+   - **v0.1.0** (first release only): full product overview — goal, flow, agents, install
+   - **v0.2.0+** (minor/patch): **diff-focused** — only `### ✨ What's new in vX.Y.Z` with categorized changes since the previous tag; link to v0.1.0 + README for full overview
    - Never mention external projects
    - Patch releases may omit a notes file and rely on git-cliff (optional)
 4. **Validate**

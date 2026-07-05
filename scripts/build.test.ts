@@ -11,7 +11,6 @@ import {
   buildCodexAgentYaml,
   serializeCodexAgentYaml,
   compileGeminiTree,
-  assertGeminiDistributionTree,
 } from './build.ts';
 
 const root = path.resolve(import.meta.dirname, '..');

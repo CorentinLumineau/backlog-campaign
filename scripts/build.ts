@@ -314,32 +314,6 @@ const assertGeminiTree = (destRoot: string, label: string) => {
   }
 };
 
-/** Antigravity distribution bundle: plugin.json + skills/ + rules/ only (no agents/). */
-export const assertGeminiDistributionTree = (destRoot: string) => {
-  if (fs.existsSync(path.join(destRoot, 'agents'))) {
-    throw new Error('Gemini distribution: must not include agents/ (use workspace .agents/ for agent prompts)');
-  }
-  const rulesDir = path.join(destRoot, 'rules');
-  const ruleFiles = fs.existsSync(rulesDir)
-    ? fs.readdirSync(rulesDir).filter((f) => rulesList.includes(f))
-    : [];
-  if (ruleFiles.length !== 3) {
-    throw new Error(`Gemini distribution: expected 3 rules, got ${ruleFiles.length}`);
-  }
-  const skillPath = path.join(destRoot, 'skills', 'bc-campaign', 'SKILL.md');
-  if (!fs.existsSync(skillPath)) {
-    throw new Error('Gemini distribution: missing skills/bc-campaign/SKILL.md');
-  }
-  const refsDir = path.join(destRoot, 'skills', 'bc-campaign', 'references');
-  if (!fs.existsSync(refsDir) || fs.readdirSync(refsDir).length === 0) {
-    throw new Error('Gemini distribution: missing or empty skills/bc-campaign/references/');
-  }
-  const manifestPath = path.join(destRoot, 'plugin.json');
-  if (!fs.existsSync(manifestPath)) {
-    throw new Error('Gemini distribution: missing plugin.json');
-  }
-};
-
 export const compileCodexTree = (rootDir: string, agentDir: string, rulesPath: string) => {
   compileFolder('agents', path.join(rootDir, 'codex-agents'), agentDir, rulesPath, 'codex', true);
   processFile(
@@ -396,7 +370,6 @@ cleanDir(path.join(root, '.claude'));
 cleanDir(path.join(root, '.claude-plugin'));
 if (buildGemini) {
   cleanDir(path.join(root, AGENTS_BUILD_ROOT));
-  cleanDir(path.join(root, 'plugins', 'backlog-campaign'));
   cleanDir(path.join(root, '.gemini-plugin'));
 }
 if (buildCodex) {
@@ -505,21 +478,13 @@ compileFolder(
   'claude'
 );
 
-// 5. Compile Target D: Gemini/Antigravity — workspace (.agents/build/) + distribution (plugins/backlog-campaign/) — opt-in (#13, #27)
+// 5. Compile Target D: Gemini/Antigravity — workspace (.agents/build/) — opt-in (#13)
 if (buildGemini) {
   console.log('Compiling Target D (Gemini/Antigravity workspace — .agents/build/)...');
   const agentsBuildRoot = path.join(root, AGENTS_BUILD_ROOT);
   compileGeminiTree(agentsBuildRoot, AGENTS_BUILD_AGENT_DIR, AGENTS_BUILD_VCODES);
   assertGeminiTree(agentsBuildRoot, 'workspace');
 
-  console.log('Compiling Target D distribution bundle (plugins/backlog-campaign/)...');
-  const distRoot = path.join(root, 'plugins', 'backlog-campaign');
-  const distAgentDir = 'plugins/backlog-campaign';
-  const distRulesPath = 'plugins/backlog-campaign/rules/bc-campaign-vcodes.md';
-  compileGeminiTree(distRoot, distAgentDir, distRulesPath, { includeAgents: false });
-  const geminiPluginMeta = buildGeminiPluginManifest(version);
-  fs.writeFileSync(path.join(distRoot, 'plugin.json'), JSON.stringify(geminiPluginMeta, null, 2), 'utf-8');
-  assertGeminiDistributionTree(distRoot);
 
   // Detached manifest for marketplace metadata (same payload as co-located plugin.json).
   const geminiPluginDir = path.join(root, '.gemini-plugin');

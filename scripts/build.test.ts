@@ -104,7 +104,9 @@ describe('buildGeminiPluginManifest', () => {
   test('includes required Antigravity schema fields', () => {
     const manifest = buildGeminiPluginManifest('1.2.3');
     expect(manifest.$schema).toBe('https://antigravity.google/schemas/v1/plugin.json');
-    expect(manifest.name).toBe('backlog-campaign');
+    expect(manifest.name).toBe('bc-campaign');
+    expect(manifest.author.name).toBe('bc-campaign contributors');
+    expect(manifest.keywords[0]).toBe('bc-campaign');
     expect(manifest.version).toBe('1.2.3');
     expect(manifest.description).toContain('backlog campaign');
   });

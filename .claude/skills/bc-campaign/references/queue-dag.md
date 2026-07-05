@@ -8,7 +8,6 @@ Path: `.bc-campaign/queue.json` (gitignored at runtime).
 {
   "refreshed_at": "2026-07-04T12:00:00.000Z",
   "campaign_started_at": "2026-07-04T10:00:00.000Z",
-  "active_scope": { "milestone": "v0.5.0" },
   "user_queue_order": [301, 298, 275],
   "issues": {
     "298": {
@@ -43,8 +42,6 @@ Path: `.bc-campaign/queue.json` (gitignored at runtime).
 | `migration_slot` | boolean | True if issue owns schema migration |
 | `touch_paths` | string[] | Glob patterns for conflict detection |
 | `epic_parent` | number \| null | Child issues link to parent epic |
-| `scope_milestone` | string \| null | Milestone title at ingest (dashboard scope filter) |
-| `scope_labels` | string[] | Label subset at ingest when `scope_labels` configured |
 
 ### Status transitions
 

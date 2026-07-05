@@ -8,13 +8,10 @@ orchestrator turn logs.
 
 ```bash
 bun run status
-# sync + dashboard; or: bun run sync then bun run status --no-sync
 # or: bun run scripts/campaign-status.ts --campaign-dir .bc-campaign
 ```
 
-When `auto_sync` is true (default), `bun run status` **writes** `queue.json` via
-`bun run sync` before rendering. Prior-scope completed issues are hidden from
-counts when `scope_milestone` changes (queue rows preserved). Also reads
+Reads `.bc-campaign/config.json`, `queue.json`, `findings-ledger.json`,
 `campaign-checkpoint.md`, and (when `gh` is available) scoped forge open counts.
 
 ## When to print (REQUIRED)

@@ -2,7 +2,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { spawnSync } from 'child_process';
 import { readScope, buildListArgs, type CampaignScope } from './forge-scope';
-import { runForgeSync, filterIssuesForScope } from './forge-sync';
 
 const root = path.resolve(import.meta.dirname, '..');
 
@@ -112,9 +111,8 @@ export function formatDashboard(opts: {
   ledger: LedgerJson;
   forge: ForgeCounts;
   checkpointBody?: string;
-  hiddenDoneCount?: number;
 }): string {
-  const { scope, checkpoint, queue, ledger, forge, checkpointBody, hiddenDoneCount = 0 } = opts;
+  const { scope, checkpoint, queue, ledger, forge, checkpointBody } = opts;
   const issues = queue.issues ?? {};
   const findings = ledger.findings ?? [];
   const { active, done, inFlight, blocked, ready } = groupIssuesByPhase(issues);
@@ -185,11 +183,6 @@ export function formatDashboard(opts: {
         .map(({ num, issue }) => `#${num}${issue.pr != null ? ` → PR #${issue.pr}` : ''}`)
         .join(' · '),
     );
-    if (hiddenDoneCount > 0) {
-      lines.push(
-        `_${hiddenDoneCount} completed issue${hiddenDoneCount === 1 ? '' : 's'} from prior scope hidden_`,
-      );
-    }
     lines.push('');
   }
 
@@ -274,7 +267,6 @@ export function loadCampaignState(campaignDir: string) {
     repo?: string;
     scope_milestone?: string;
     scope_labels?: string[];
-    auto_sync?: boolean;
   };
   const queue = JSON.parse(fs.readFileSync(queuePath, 'utf-8')) as QueueJson;
   const ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf-8')) as LedgerJson;
@@ -294,7 +286,6 @@ function main() {
   const args = process.argv.slice(2);
   let campaignDir = path.join(root, '.bc-campaign');
   let skipGh = false;
-  let skipSync = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--campaign-dir' && args[i + 1]) {
@@ -304,22 +295,12 @@ function main() {
       i++;
     } else if (args[i] === '--no-gh') {
       skipGh = true;
-    } else if (args[i] === '--no-sync') {
-      skipSync = true;
     }
   }
 
-  let { config, queue, ledger, checkpoint, checkpointBody } =
+  const { config, queue, ledger, checkpoint, checkpointBody } =
     loadCampaignState(campaignDir);
   const scope = readScope(config);
-
-  if (!skipGh && !skipSync && config.auto_sync !== false) {
-    runForgeSync(campaignDir, { quiet: true });
-    ({ queue } = loadCampaignState(campaignDir));
-  }
-
-  const { visible, hiddenDoneCount } = filterIssuesForScope(queue.issues ?? {}, scope);
-  const scopedQueue = { ...queue, issues: visible };
 
   const forge = skipGh
     ? { openIssues: 0, openPrs: 0, ok: false, error: 'skipped' }
@@ -328,11 +309,10 @@ function main() {
   const dashboard = formatDashboard({
     scope,
     checkpoint,
-    queue: scopedQueue,
+    queue,
     ledger,
     forge,
     checkpointBody,
-    hiddenDoneCount,
   });
 
   console.log(dashboard);

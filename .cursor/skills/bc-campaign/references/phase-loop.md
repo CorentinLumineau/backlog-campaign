@@ -34,7 +34,7 @@ For issue N, PR P:
 
 ## Next batch
 
-1. Run `bun run sync`
+1. Run forge sync
 2. Build ready set per `queue-dag.md` and **sort in descending order** of their Pareto Priority score.
 3. For each selected issue, set `in-flight`, spawn worker at correct phase:
    - New issues start at **handle** or **plan** if handle complete

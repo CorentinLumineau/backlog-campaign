@@ -147,6 +147,7 @@ Register the repository as a plugin marketplace catalog and install it:
 # 2. Install the plugin
 /plugin install bc-campaign@bc-campaign-marketplace
 ```
+The marketplace URL uses the GitHub repo slug `backlog-campaign`; the installed plugin id is `bc-campaign`.
 
 ### Pathway C: Generic / skills.sh Registry
 Install using the standard registry:
@@ -157,12 +158,14 @@ Any compatible agent will read the root `SKILL.md` and load the associated rules
 
 ### Pathway D: Antigravity / Gemini Native
 
+The distribution `plugin.json` `name` is **`bc-campaign`** (same plugin id as Claude and Codex). The build output directory `plugins/backlog-campaign/` uses the repo slug for path layout — that folder name is not the plugin id.
+
 `bun run build --gemini` emits **two** Gemini trees:
 
 | Tree | Purpose | Contents |
 |------|---------|----------|
 | `.agents/build/` | Workspace customization (this repo or submodule) | `agents/` (6 bc-* prompts), `rules/`, `skills/bc-campaign/` |
-| `plugins/backlog-campaign/` | Redistributable Antigravity plugin bundle | `plugin.json`, `rules/`, `skills/bc-campaign/` (no `agents/`) |
+| `plugins/backlog-campaign/` | Redistributable Antigravity plugin bundle (build output dir; plugin id `bc-campaign`) | `plugin.json`, `rules/`, `skills/bc-campaign/` (no `agents/`) |
 
 Ephemeral session handoff dirs (`.agents/orchestrator/`, `.agents/worker_*/`, etc.) share the `.agents/` parent but are gitignored and separate from the tracked `build/` compile tree.
 
@@ -175,9 +178,11 @@ Compiles `.agents/build/agents/`, `.agents/build/rules/`, and `.agents/build/ski
 **Global / redistributable install (Antigravity plugin schema):**
 ```bash
 bun run build --gemini
-ln -s /path/to/backlog-campaign/plugins/backlog-campaign ~/.gemini/config/plugins/backlog-campaign
+ln -s /path/to/backlog-campaign/plugins/backlog-campaign ~/.gemini/config/plugins/bc-campaign
 ```
-Or copy `plugins/backlog-campaign/` to `~/.gemini/config/plugins/backlog-campaign/`. This tree is co-located per [Antigravity plugin docs](https://antigravity.google): `plugin.json` beside `skills/` and `rules/`.
+Or copy `plugins/backlog-campaign/` to `~/.gemini/config/plugins/bc-campaign/`. The global path uses the plugin id (`bc-campaign`); the source folder keeps the repo-slug name. This tree is co-located per [Antigravity plugin docs](https://antigravity.google): `plugin.json` beside `skills/` and `rules/`.
+
+**Breaking change (v0.4+):** If you previously symlinked to `~/.gemini/config/plugins/backlog-campaign`, remove that stale path and reinstall under `~/.gemini/config/plugins/bc-campaign` after upgrading.
 
 **Workspace plugin (other consumer repos):**
 ```bash
@@ -186,6 +191,18 @@ ln -s /path/to/backlog-campaign/plugins/backlog-campaign .agents/plugins/backlog
 ```
 
 For local development in this repo, prefer the full `.agents/build/` workspace tree (includes agent prompts). Use `plugins/backlog-campaign/` when packaging or installing globally. `.gemini-plugin/plugin.json` mirrors the distribution manifest for marketplace metadata only.
+
+#### Identifiers: repo slug vs plugin id
+
+| Harness | Stays `backlog-campaign` | Reason |
+|---------|--------------------------|--------|
+| GitHub repository | `CorentinLumineau/backlog-campaign` | Marketplace URLs, `gh`, CI, submodule remotes |
+| skills.sh / Pathway C | `npx skills add CorentinLumineau/backlog-campaign` | Registry tied to repo name |
+| Build output directory | `plugins/backlog-campaign/` | `{{AGENT_DIR}}` paths compiled into distribution SKILL.md and rules |
+| Codex/Gemini `homepage` / `repository` / `websiteURL` | `…/backlog-campaign` | Points at actual repo URL |
+| Legacy global installs | `~/.gemini/config/plugins/backlog-campaign`, `~/.agents/skills/backlog-campaign` | Existing symlinks; `bun run doctor` may WARN (#35) |
+
+The **plugin id** (`bc-campaign`) is consistent across Claude, Codex, and Gemini manifests. The **repo slug** (`backlog-campaign`) remains for URLs and the distribution folder name until a dedicated path-migration issue.
 
 ### Pathway E: Codex CLI Native
 
@@ -198,6 +215,8 @@ codex plugin marketplace add https://github.com/CorentinLumineau/backlog-campaig
 # 2. Install the plugin
 codex plugin add bc-campaign@bc-campaign-codex
 ```
+
+The marketplace URL uses the GitHub repo slug `backlog-campaign`; the installed plugin id is `bc-campaign`.
 
 **Maintainers:** after editing `src/`, run `bun run build` (Codex is included by default) and commit any changed Codex outputs. Use `bun run build --no-codex` to skip Codex when iterating on other targets only.
 

@@ -205,12 +205,12 @@ const rulesList = ['bc-campaign-protocol.md', 'bc-campaign-state.md', 'bc-campai
 
 export const buildGeminiPluginManifest = (pkgVersion: string) => ({
   $schema: 'https://antigravity.google/schemas/v1/plugin.json',
-  name: 'backlog-campaign',
+  name: 'bc-campaign',
   description: 'Agent-agnostic backlog campaign orchestrator to empty the forge backlog.',
   version: pkgVersion,
-  author: { name: 'backlog-campaign contributors' },
+  author: { name: 'bc-campaign contributors' },
   license: 'Apache-2.0',
-  keywords: ['backlog-campaign', 'gemini', 'native', 'workflows', 'skills'],
+  keywords: ['bc-campaign', 'gemini', 'native', 'workflows', 'skills'],
 });
 
 export const buildCodexPluginManifest = (pkgVersion: string) => ({

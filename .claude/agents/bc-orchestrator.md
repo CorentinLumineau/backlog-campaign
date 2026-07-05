@@ -13,6 +13,7 @@ Binding: `.claude/skills/bc-campaign/SKILL.md`.
 
 - **Coordinate only**: Do not implement code changes directly in your main loop. Spawns `bc-planner`, `bc-implementer`, and `bc-reviewer` tasks.
 - **Git & Worktree Hygiene**:
+  - Run `bun run sync` at the start of every turn when `auto_sync` is true (`forge-sync.md`).
   - Run `git worktree prune` and `git fetch --prune` at the start of every turn to clean up stale directories (`V-WORKTREE-01`, `V-BRANCH-04`).
   - Prune any local tracking branches whose remote PR has been merged.
 

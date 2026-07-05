@@ -35,7 +35,7 @@ Direct `/bc-campaign run` or `/goal` in a single session: act as orchestrator (l
 1. **Config** — `.bc-campaign/config.json` (from `config-template.md` in this repo)
 2. **State init** — `queue.json`, `findings-ledger.json`, `plans/`
 3. **Validate** — `jq empty` on both JSON files
-4. **Forge sync** — if `auto_sync` true (default): `gh auth status` then [forge-sync.md](references/forge-sync.md). Sandbox: `full_network`.
+4. **Forge sync** — if `auto_sync` true (default): `bun run sync` (or `bun run status`, which syncs first). Sandbox: `full_network`.
 5. **Dashboard** — open issues/PRs, new since sync, in-flight, LEDGER OPEN, ready set
 
 ---

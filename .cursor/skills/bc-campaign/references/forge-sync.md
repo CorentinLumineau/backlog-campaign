@@ -2,6 +2,18 @@
 
 Uses `gh` CLI.
 
+## CLI (deterministic)
+
+```bash
+bun run sync
+# or: bun run scripts/forge-sync.ts --campaign-dir .bc-campaign
+```
+
+`bun run status` runs forge sync first when `auto_sync` is true (default), then
+prints the dashboard with **scope-filtered** queue counts (prior-milestone
+completions are hidden, not deleted).
+
+
 All commands need `required_permissions: ["full_network"]` in the Cursor sandbox.
 
 ## Native auto-sync (binding)
@@ -11,10 +23,13 @@ confirm before syncing.
 
 | Trigger | Action |
 |---------|--------|
-| Phase 0 bootstrap (all skill modes) | Full sync |
-| Start of every orchestrator turn | Full sync |
-| Phase 5 loop (before ready set) | Full sync |
-| Session resume / handoff | Full sync |
+| `bun run sync` | Full sync (explicit) |
+| `bun run status` | Full sync when `auto_sync` true, then dashboard |
+| Phase 0 bootstrap (all skill modes) | `bun run sync` or `bun run status` |
+| Start of every orchestrator turn | `bun run sync` |
+| Phase 5 loop (before ready set) | `bun run sync` |
+| Session resume / handoff | `bun run sync` |
+| Discovery issue filed (`gh issue create`) | `bun run status` on next coordinator turn |
 | Any agent using `queue.json` for scheduling | Sync first if `refreshed_at` older than current turn |
 
 When `.bc-campaign/config.json` has `auto_sync: false`, skip forge calls (offline only).

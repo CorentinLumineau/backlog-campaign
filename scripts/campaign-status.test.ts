@@ -154,6 +154,23 @@ describe('formatDashboard', () => {
     expect(out).toContain('#11');
   });
 
+  test('notes hidden prior-scope completions', () => {
+    const out = formatDashboard({
+      ...baseOpts,
+      scope: { milestone: 'v0.5.0' },
+      hiddenDoneCount: 3,
+      queue: {
+        refreshed_at: '2026-07-05T18:00:00.000Z',
+        issues: {
+          '28': { status: 'merged', scope_milestone: 'v0.5.0', pr: 57 },
+        },
+      },
+    });
+
+    expect(out).toContain('#28 → PR #57');
+    expect(out).toContain('3 completed issues from prior scope hidden');
+  });
+
   test('renders deferred discovery filings with vcode', () => {
     const out = formatDashboard({
       ...baseOpts,

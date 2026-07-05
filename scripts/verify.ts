@@ -414,10 +414,37 @@ const checkCodexBuild = () => {
   if (agentFiles.length !== 6) {
     agentErrors.push(`expected 6 bc-*.yaml agents, got ${agentFiles.length}`);
   }
+  const yamlScalar = (content: string, field: string): string | null => {
+    const m = content.match(new RegExp(`^${field}:\\s*(.+)$`, 'm'));
+    return m ? m[1].trim() : null;
+  };
+
   for (const file of agentFiles) {
     const content = fs.readFileSync(path.join(agentsDir, file), 'utf-8');
     if (!content.includes('instructions: |')) {
       agentErrors.push(`${file}: missing instructions block`);
+      continue;
+    }
+
+    for (const field of ['name', 'description', 'model', 'permissionMode'] as const) {
+      const val = yamlScalar(content, field);
+      if (!val) agentErrors.push(`${file}: missing or empty ${field}`);
+    }
+
+    const hasToolEntries = /^disallowedTools:\n(?:\s+-\s+\S+\n)+/m.test(content);
+    const hasEmptyTools = /^disallowedTools:\s*\[\]\s*$/m.test(content);
+    if (!hasToolEntries && !hasEmptyTools) {
+      agentErrors.push(`${file}: missing disallowedTools entries`);
+    }
+
+    const instMatch = content.match(/^instructions:\s*\|\n([\s\S]*)$/m);
+    if (instMatch) {
+      const instructions = instMatch[1].replace(/^  /gm, '').trim();
+      if (instructions.length <= 200) {
+        agentErrors.push(`${file}: instructions too short (${instructions.length} chars)`);
+      }
+    } else {
+      agentErrors.push(`${file}: could not parse instructions block`);
     }
   }
   for (const rel of walkMdFiles('codex-skills')) {

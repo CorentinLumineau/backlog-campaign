@@ -25,6 +25,65 @@ const stripCursorFrontmatter = (content: string): string => {
   return content.replace(/^---\n(?:.*\n)*?---\n\n?/, '');
 };
 
+// Parse YAML frontmatter from markdown — body is everything after the first closing --- only.
+export const parseMdFrontmatter = (content: string): { frontmatter: string; body: string } => {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+  if (!match) return { frontmatter: '', body: content };
+  return { frontmatter: match[1], body: match[2] };
+};
+
+export const parseFrontmatterFields = (fmContent: string): Record<string, string> => {
+  const fm: Record<string, string> = {};
+  for (const line of fmContent.split('\n')) {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx === -1) continue;
+    const key = line.substring(0, colonIdx).trim();
+    const val = line.substring(colonIdx + 1).trim();
+    if (key) fm[key] = val;
+  }
+  return fm;
+};
+
+export const parseDisallowedTools = (fm: Record<string, string>): string[] => {
+  if (!fm.disallowedTools) return [];
+  const m = fm.disallowedTools.match(/\[(.*)\]/);
+  if (!m || !m[1].trim()) return [];
+  return m[1].split(',').map((t) => t.trim()).filter(Boolean);
+};
+
+export const serializeCodexAgentYaml = (fm: Record<string, string>, bodyContent: string): string => {
+  const tools = parseDisallowedTools(fm);
+  let yaml = '';
+  yaml += `name: ${fm.name || ''}\n`;
+  yaml += `description: ${fm.description || ''}\n`;
+  yaml += `model: ${fm.model || ''}\n`;
+  yaml += `permissionMode: ${fm.permissionMode || ''}\n`;
+  if (tools.length > 0) {
+    yaml += `disallowedTools:\n`;
+    for (const tool of tools) yaml += `  - ${tool}\n`;
+  } else {
+    yaml += `disallowedTools: []\n`;
+  }
+  const indentedBody = bodyContent
+    .split('\n')
+    .map((line) => (line ? `  ${line}` : ''))
+    .join('\n');
+  yaml += `instructions: |\n${indentedBody}\n`;
+  return yaml;
+};
+
+export const buildCodexAgentYaml = (
+  sourceContent: string,
+  agentDir: string,
+  rulesPath: string
+): string => {
+  const { frontmatter, body } = parseMdFrontmatter(sourceContent);
+  const fm = parseFrontmatterFields(frontmatter);
+  let bodyContent = applyPlatformConditionals(body, 'codex');
+  bodyContent = compileContent(bodyContent, agentDir, rulesPath, 'codex');
+  return serializeCodexAgentYaml(fm, bodyContent.trim());
+};
+
 // Enrich Cursor MDC frontmatter with glob patterns so the rule auto-applies on matching files.
 const enrichVcodesMdcGlobs = (content: string): string => {
   return content.replace(
@@ -79,16 +138,30 @@ const processFile = (
   isAgent = false,
   isSkill = false
 ) => {
-  let content = fs.readFileSync(srcPath, 'utf-8');
+  const originalContent = fs.readFileSync(srcPath, 'utf-8');
+
+  const destDir = path.dirname(destPath);
+  if (!fs.existsSync(destDir)) {
+    fs.mkdirSync(destDir, { recursive: true });
+  }
+
+  // Codex agents: parse frontmatter from original source; compile body only
+  if (isAgent && target === 'codex') {
+    const yaml = buildCodexAgentYaml(originalContent, agentDir, rulesPath);
+    fs.writeFileSync(destPath, yaml, 'utf-8');
+    return;
+  }
+
+  let content = originalContent;
 
   if (target === 'cursor') {
     // Cursor: enrich vcodes .mdc with glob patterns
     if (isVcodesMdc) {
       content = enrichVcodesMdcGlobs(content);
     }
-  } else if (isAgent && (target === 'claude' || target === 'gemini')) {
-    // Claude/Gemini agents: preserve frontmatter (name, description, model, disallowedTools)
-    // — do not strip, since Claude Code / Gemini reads agent frontmatter
+  } else if (isAgent && (target === 'claude' || target === 'gemini' || target === 'codex')) {
+    // Claude/Gemini/Codex agents: preserve frontmatter (name, description, model, disallowedTools)
+    // — do not strip; Codex serializes frontmatter into YAML separately
   } else if (target === 'codex' && isSkill) {
     // Codex skill: preserve skill frontmatter (disable-model-invocation, name, description)
   } else {
@@ -98,59 +171,6 @@ const processFile = (
 
   content = applyPlatformConditionals(content, target);
   const compiled = compileContent(content, agentDir, rulesPath, target);
-
-  const destDir = path.dirname(destPath);
-  if (!fs.existsSync(destDir)) {
-    fs.mkdirSync(destDir, { recursive: true });
-  }
-
-  // Codex agents: serialize frontmatter + body as YAML
-  if (isAgent && target === 'codex') {
-    const parts = compiled.split(/^---$/m);
-    const fmContent = parts.length >= 3 ? parts[1] : '';
-    const bodyContent = parts.length >= 3 ? parts.slice(2).join('---').trim() : compiled.trim();
-
-    // Parse frontmatter key-value pairs
-    const fm: Record<string, string> = {};
-    for (const line of fmContent.split('\n')) {
-      const colonIdx = line.indexOf(':');
-      if (colonIdx === -1) continue;
-      const key = line.substring(0, colonIdx).trim();
-      const val = line.substring(colonIdx + 1).trim();
-      if (key) fm[key] = val;
-    }
-
-    // Parse disallowedTools array value like [Write, Edit]
-    let tools: string[] = [];
-    if (fm.disallowedTools) {
-      const m = fm.disallowedTools.match(/\[(.*)\]/);
-      if (m && m[1].trim()) {
-        tools = m[1].split(',').map(t => t.trim()).filter(Boolean);
-      }
-    }
-
-    // Build YAML output
-    let yaml = '';
-    yaml += `name: ${fm.name || ''}\n`;
-    yaml += `description: ${fm.description || ''}\n`;
-    yaml += `model: ${fm.model || ''}\n`;
-    yaml += `permissionMode: ${fm.permissionMode || ''}\n`;
-    if (tools.length > 0) {
-      yaml += `disallowedTools:\n`;
-      for (const tool of tools) yaml += `  - ${tool}\n`;
-    } else {
-      yaml += `disallowedTools: []\n`;
-    }
-    // Block scalar for instructions
-    const indentedBody = bodyContent
-      .split('\n')
-      .map(line => (line ? `  ${line}` : ''))
-      .join('\n');
-    yaml += `instructions: |\n${indentedBody}\n`;
-
-    fs.writeFileSync(destPath, yaml, 'utf-8');
-    return;
-  }
 
   fs.writeFileSync(destPath, compiled, 'utf-8');
 };

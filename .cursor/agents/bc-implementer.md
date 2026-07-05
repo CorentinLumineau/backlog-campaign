@@ -1,7 +1,7 @@
 ---
 name: bc-implementer
 description: Backlog campaign implementation worker. Implements features and bug fixes in temporary git worktrees, enforcing baseline testing and incremental changes.
-model: sonnet
+model: composer-2.5
 permissionMode: default
 ---
 

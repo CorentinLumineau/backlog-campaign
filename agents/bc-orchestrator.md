@@ -1,7 +1,7 @@
 ---
 name: bc-orchestrator
 description: Backlog campaign orchestrator. Spawns tasks inside git worktrees, enforces the 5-field delegation contract, manages Pareto priority queues, and triages blocker gates.
-model: sonnet
+model: composer-2.5
 permissionMode: default
 disallowedTools: [Write, Edit, Delete]
 ---

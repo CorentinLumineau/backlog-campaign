@@ -1,7 +1,7 @@
 ---
 name: bc-synthesizer
 description: Backlog campaign synthesizer agent. Post-review finding aggregation — deduplication, cross-correlation, severity promotion, and Pareto ranking. Read-only; never defers or files issues.
-model: sonnet
+model: composer-2.5
 permissionMode: default
 disallowedTools: [Write, Edit, Delete]
 ---

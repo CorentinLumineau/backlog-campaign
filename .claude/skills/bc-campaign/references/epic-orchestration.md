@@ -40,6 +40,7 @@ Blocked by #N (if any)
 
 - Target `size:s` or `size:m` per child. If a child is still too large, split again.
 - Update `queue.json`: each child gets `epic_parent: <parent_number>` and `depends_on` as needed.
+- After queue update, write-back each child's non-empty `depends_on` to its issue body ([forge-sync.md](forge-sync.md) §6.5).
 - Parent issue: set `status: blocked`, `phase: handle`.
 
 ---

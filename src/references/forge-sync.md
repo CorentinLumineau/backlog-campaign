@@ -122,6 +122,10 @@ For each issue in `queue.json`:
 | Title / labels changed | Update `title`, `size` from forge |
 | Still open, in queue | Refresh `depends_on` from body (step 6) |
 
+When the orchestrator **mutated** `depends_on` this turn (handle inference, split, epic
+child deps), run **§6.5 write-back before step 6** so the queue remains authoritative until
+the issue body is synced. Skip write-back when `auto_sync: false` (offline — queue-only).
+
 **Preserve** `in-flight` entries — do not demote to `ready` while worker active
 unless forge shows issue closed.
 
@@ -135,6 +139,47 @@ Patterns (case-insensitive):
 - `Part of #298` → set `epic_parent: 298` (not a hard dependency)
 
 Add to `depends_on` array (dedupe). Re-run on every sync so new body edits apply.
+
+`Part of #N` sets `epic_parent` only — not written back by write-back (§6.5).
+
+### 6.5 Dependency write-back (queue → body)
+
+When the orchestrator sets or updates `depends_on` in `queue.json`, persist to the
+matching GitHub issue body so the next forge sync does not drop inferred deps.
+
+**Triggers** (see also `phase-handle.md`, `queue-dag.md`, `epic-orchestration.md`):
+
+- After handle infers or updates `depends_on`
+- After issue split sets child `depends_on`
+- After epic orchestration assigns child deps
+
+Skip when `.bc-campaign/config.json` has `auto_sync: false` (offline — queue-only).
+
+**Idempotent merge rules:**
+
+- Match dependency lines case-insensitively: `Blocked by #N`, `Depends on #N`, `After #N merges`
+- **Add** missing deps from `depends_on` as `Blocked by #N` (one per line)
+- **Remove** dependency lines for issue numbers no longer in `depends_on` (normalize aliases on removal)
+- **Do not duplicate** — if `Blocked by #11` exists, do not add a second line for #11
+- **Preserve** all non-matching lines and section order; update an existing `## Dependencies` section, else append one at end of body
+- **Do not** rewrite `Part of #N` (epic parent) lines
+
+**CLI** (orchestrator pipes merged body to `gh issue edit`):
+
+```bash
+# Print merged body from stdin
+bun scripts/forge-deps.ts merge-body --deps 11,12 < body.md
+
+# Fetch + apply for issue #13
+gh issue view 13 --json body -q .body | \
+  bun scripts/forge-deps.ts merge-body --deps 11,12 | \
+  gh issue edit 13 --body-file -
+```
+
+Helper exports: `parseDependsFromBody(body)`, `mergeDependsIntoBody(body, dependsOn)`.
+
+**Round-trip acceptance:** body → sync → queue `depends_on` mutation → write-back →
+re-sync preserves `depends_on`.
 
 ### 7. PR cross-reference
 

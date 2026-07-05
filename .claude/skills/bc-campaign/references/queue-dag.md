@@ -37,7 +37,7 @@ Path: `.bc-campaign/queue.json` (gitignored at runtime).
 | `status` | `blocked` \| `ready` \| `in-flight` \| `merged` \| `closed` | Scheduling state |
 | `review_iteration` | number | Review loop counter (default 0); see `review-core.md` |
 | `notes` | string \| null | e.g. `awaiting-user-clarification`, `awaiting-plan-approval`, `overlap with #N` |
-| `depends_on` | number[] | Issue numbers that must be merged/closed first |
+| `depends_on` | number[] | Issue numbers that must be merged/closed first; bidirectional sync with forge issue bodies via [forge-sync.md](forge-sync.md) §6.5 write-back |
 | `blocks` | number[] | Inverse index (optional, for display) |
 | `migration_slot` | boolean | True if issue owns schema migration |
 | `touch_paths` | string[] | Glob patterns for conflict detection |
@@ -101,6 +101,9 @@ Take up to `parallel_max` (default 4 from config) from the **current wave's** re
 `user_queue_order` then Pareto Priority. Spawn workers in **one orchestrator turn**.
 
 ### Step 6 — Persist
+
+When `depends_on` changed this turn, run [forge-sync.md](forge-sync.md) §6.5 write-back
+**before** bumping `refreshed_at` (skip when `auto_sync: false`).
 
 Bump `refreshed_at` on every mutation:
 

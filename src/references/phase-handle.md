@@ -13,6 +13,8 @@ Orchestrator-led. Workers: read-only `explore` only.
 - [ ] issue-splitting.md — split if not one reviewable PR (not only l/xl/epic)
 - [ ] Epic-shaped / size:l/xl → `epic-orchestration.md` runbook + PO gate
 - [ ] queue.json: phase plan, status ready OR blocked (awaiting-user-*)
+- [ ] After setting `depends_on` in queue.json, persist to issue body ([forge-sync.md](forge-sync.md) §6.5)
+- [ ] Split children: write-back each child's deps after queue update ([forge-sync.md](forge-sync.md) §6.5)
 ```
 
 ## Clarify (all sizes)

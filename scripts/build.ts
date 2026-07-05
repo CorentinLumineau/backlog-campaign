@@ -6,6 +6,12 @@ const srcDir = path.join(root, 'src');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf-8'));
 const version = pkg.version;
 
+// Gemini/Codex targets are opt-in until tracked in repo (#10, #13). Default build matches CI.
+const args = new Set(process.argv.slice(2));
+const buildAll = args.has('--all');
+const buildGemini = buildAll || args.has('--gemini');
+const buildCodex = buildAll || args.has('--codex');
+
 const cleanDir = (dirPath: string) => {
   if (fs.existsSync(dirPath)) {
     fs.rmSync(dirPath, { recursive: true, force: true });
@@ -176,20 +182,24 @@ cleanDir(path.join(root, 'references'));
 cleanDir(path.join(root, '.cursor'));
 cleanDir(path.join(root, '.claude'));
 cleanDir(path.join(root, '.claude-plugin'));
-cleanDir(path.join(root, '.agents', 'rules'));
-cleanDir(path.join(root, '.agents', 'agents'));
-cleanDir(path.join(root, '.agents', 'skills', 'bc-campaign'));
-cleanDir(path.join(root, '.gemini-plugin'));
-cleanDir(path.join(root, 'codex-agents'));
-cleanDir(path.join(root, 'codex-skills'));
-cleanDir(path.join(root, '.codex-plugin'));
+if (buildGemini) {
+  cleanDir(path.join(root, '.agents', 'rules'));
+  cleanDir(path.join(root, '.agents', 'agents'));
+  cleanDir(path.join(root, '.agents', 'skills', 'bc-campaign'));
+  cleanDir(path.join(root, '.gemini-plugin'));
+}
+if (buildCodex) {
+  cleanDir(path.join(root, 'codex-agents'));
+  cleanDir(path.join(root, 'codex-skills'));
+  cleanDir(path.join(root, '.codex-plugin'));
+}
 if (fs.existsSync(path.join(root, 'SKILL.md'))) {
   fs.unlinkSync(path.join(root, 'SKILL.md'));
 }
 if (fs.existsSync(path.join(root, 'marketplace.json'))) {
   fs.unlinkSync(path.join(root, 'marketplace.json'));
 }
-if (fs.existsSync(path.join(root, 'codex-marketplace.json'))) {
+if (buildCodex && fs.existsSync(path.join(root, 'codex-marketplace.json'))) {
   fs.unlinkSync(path.join(root, 'codex-marketplace.json'));
 }
 
@@ -274,55 +284,56 @@ compileFolder(
   'claude'
 );
 
-// 5. Compile Target D: Gemini/Antigravity Project-Level Native (.agents/)
-console.log('Compiling Target D (Gemini/Antigravity Project Native)...');
-compileFolder(
-  'agents',
-  path.join(root, '.agents', 'agents'),
-  '.agents',
-  '.agents/rules/bc-campaign-vcodes.md',
-  'gemini',
-  true
-);
-for (const rule of rulesList) {
+// 5. Compile Target D: Gemini/Antigravity Project-Level Native (.agents/) — opt-in (#13)
+if (buildGemini) {
+  console.log('Compiling Target D (Gemini/Antigravity Project Native)...');
+  compileFolder(
+    'agents',
+    path.join(root, '.agents', 'agents'),
+    '.agents',
+    '.agents/rules/bc-campaign-vcodes.md',
+    'gemini',
+    true
+  );
+  for (const rule of rulesList) {
+    processFile(
+      path.join(srcDir, 'references', rule),
+      path.join(root, '.agents', 'rules', rule),
+      '.agents',
+      '.agents/rules/bc-campaign-vcodes.md',
+      'gemini'
+    );
+  }
   processFile(
-    path.join(srcDir, 'references', rule),
-    path.join(root, '.agents', 'rules', rule),
+    path.join(srcDir, 'SKILL.md'),
+    path.join(root, '.agents', 'skills', 'bc-campaign', 'SKILL.md'),
     '.agents',
     '.agents/rules/bc-campaign-vcodes.md',
     'gemini'
   );
+  compileFolder(
+    'references',
+    path.join(root, '.agents', 'skills', 'bc-campaign', 'references'),
+    '.agents',
+    '.agents/rules/bc-campaign-vcodes.md',
+    'gemini'
+  );
+
+  console.log('Generating Gemini Plugin manifest...');
+  const geminiPluginMeta = {
+    name: 'bc-campaign',
+    description: 'Agent-agnostic backlog campaign orchestrator to empty the forge backlog.',
+    version,
+    author: { name: 'backlog-campaign contributors' },
+    license: 'Apache-2.0',
+    keywords: ['backlog-campaign', 'gemini', 'native', 'workflows', 'skills']
+  };
+  const geminiPluginDir = path.join(root, '.gemini-plugin');
+  if (!fs.existsSync(geminiPluginDir)) fs.mkdirSync(geminiPluginDir, { recursive: true });
+  fs.writeFileSync(path.join(geminiPluginDir, 'plugin.json'), JSON.stringify(geminiPluginMeta, null, 2), 'utf-8');
 }
-processFile(
-  path.join(srcDir, 'SKILL.md'),
-  path.join(root, '.agents', 'skills', 'bc-campaign', 'SKILL.md'),
-  '.agents',
-  '.agents/rules/bc-campaign-vcodes.md',
-  'gemini'
-);
-compileFolder(
-  'references',
-  path.join(root, '.agents', 'skills', 'bc-campaign', 'references'),
-  '.agents',
-  '.agents/rules/bc-campaign-vcodes.md',
-  'gemini'
-);
 
-// 6. Generate Gemini Plugin Manifest (.gemini-plugin/plugin.json)
-console.log('Generating Gemini Plugin manifest...');
-const geminiPluginMeta = {
-  name: 'bc-campaign',
-  description: 'Agent-agnostic backlog campaign orchestrator to empty the forge backlog.',
-  version,
-  author: { name: 'backlog-campaign contributors' },
-  license: 'Apache-2.0',
-  keywords: ['backlog-campaign', 'gemini', 'native', 'workflows', 'skills']
-};
-const geminiPluginDir = path.join(root, '.gemini-plugin');
-if (!fs.existsSync(geminiPluginDir)) fs.mkdirSync(geminiPluginDir, { recursive: true });
-fs.writeFileSync(path.join(geminiPluginDir, 'plugin.json'), JSON.stringify(geminiPluginMeta, null, 2), 'utf-8');
-
-// 7. Generate Claude Code Plugin Manifest (.claude-plugin/plugin.json)
+// 6. Generate Claude Code Plugin Manifest (.claude-plugin/plugin.json)
 console.log('Generating Claude Code Plugin manifests...');
 const pluginMeta = {
   name: 'bc-campaign',
@@ -345,54 +356,54 @@ const marketplaceJson = {
 };
 fs.writeFileSync(path.join(root, 'marketplace.json'), JSON.stringify(marketplaceJson, null, 2), 'utf-8');
 
-// 9. Compile Target E: Codex CLI Native Support
-console.log('Compiling Target E (Codex CLI Support)...');
-const codexAgentDir = 'codex-skills';
-const codexVcodesPath = 'codex-skills/bc-campaign/references/bc-campaign-vcodes.md';
-compileFolder(
-  'agents',
-  path.join(root, 'codex-agents'),
-  codexAgentDir,
-  codexVcodesPath,
-  'codex',
-  true
-);
-processFile(
-  path.join(srcDir, 'SKILL.md'),
-  path.join(root, 'codex-skills', 'bc-campaign', 'SKILL.md'),
-  codexAgentDir,
-  codexVcodesPath,
-  'codex'
-);
-compileFolder(
-  'references',
-  path.join(root, 'codex-skills', 'bc-campaign', 'references'),
-  codexAgentDir,
-  codexVcodesPath,
-  'codex'
-);
+// 9. Compile Target E: Codex CLI Native Support — opt-in (#10)
+if (buildCodex) {
+  console.log('Compiling Target E (Codex CLI Support)...');
+  const codexAgentDir = 'codex-skills';
+  const codexVcodesPath = 'codex-skills/bc-campaign/references/bc-campaign-vcodes.md';
+  compileFolder(
+    'agents',
+    path.join(root, 'codex-agents'),
+    codexAgentDir,
+    codexVcodesPath,
+    'codex',
+    true
+  );
+  processFile(
+    path.join(srcDir, 'SKILL.md'),
+    path.join(root, 'codex-skills', 'bc-campaign', 'SKILL.md'),
+    codexAgentDir,
+    codexVcodesPath,
+    'codex'
+  );
+  compileFolder(
+    'references',
+    path.join(root, 'codex-skills', 'bc-campaign', 'references'),
+    codexAgentDir,
+    codexVcodesPath,
+    'codex'
+  );
 
-// Generate Codex Plugin Manifest (.codex-plugin/plugin.json)
-console.log('Generating Codex Plugin manifest...');
-const codexPluginMeta = {
-  name: 'bc-campaign',
-  description: 'Agent-agnostic backlog campaign orchestrator to empty the forge backlog.',
-  version,
-  author: { name: 'bc-campaign contributors' },
-  license: 'Apache-2.0',
-  keywords: ['bc-campaign', 'codex', 'native', 'workflows', 'skills'],
-};
-const codexPluginDir = path.join(root, '.codex-plugin');
-if (!fs.existsSync(codexPluginDir)) fs.mkdirSync(codexPluginDir, { recursive: true });
-fs.writeFileSync(path.join(codexPluginDir, 'plugin.json'), JSON.stringify(codexPluginMeta, null, 2), 'utf-8');
+  console.log('Generating Codex Plugin manifest...');
+  const codexPluginMeta = {
+    name: 'bc-campaign',
+    description: 'Agent-agnostic backlog campaign orchestrator to empty the forge backlog.',
+    version,
+    author: { name: 'bc-campaign contributors' },
+    license: 'Apache-2.0',
+    keywords: ['bc-campaign', 'codex', 'native', 'workflows', 'skills'],
+  };
+  const codexPluginDir = path.join(root, '.codex-plugin');
+  if (!fs.existsSync(codexPluginDir)) fs.mkdirSync(codexPluginDir, { recursive: true });
+  fs.writeFileSync(path.join(codexPluginDir, 'plugin.json'), JSON.stringify(codexPluginMeta, null, 2), 'utf-8');
 
-// Generate Codex Marketplace Catalog (codex-marketplace.json)
-const codexMarketplaceJson = {
-  name: 'bc-campaign-marketplace',
-  description: 'Backlog Campaign Marketplace',
-  owner: { name: 'CorentinLumineau' },
-  plugins: [{ ...codexPluginMeta, source: '.' }],
-};
-fs.writeFileSync(path.join(root, 'codex-marketplace.json'), JSON.stringify(codexMarketplaceJson, null, 2), 'utf-8');
+  const codexMarketplaceJson = {
+    name: 'bc-campaign-marketplace',
+    description: 'Backlog Campaign Marketplace',
+    owner: { name: 'CorentinLumineau' },
+    plugins: [{ ...codexPluginMeta, source: '.' }],
+  };
+  fs.writeFileSync(path.join(root, 'codex-marketplace.json'), JSON.stringify(codexMarketplaceJson, null, 2), 'utf-8');
+}
 
 console.log('Build compilation completed successfully!');

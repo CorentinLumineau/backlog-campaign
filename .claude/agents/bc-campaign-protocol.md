@@ -1,3 +1,9 @@
+---
+description: bc-campaign protocol — Multitask Mode, five phases, clarify all sizes, never-drop findings
+globs:
+alwaysApply: true
+---
+
 # bc-campaign Protocol
 
 When this repo has `.bc-campaign/config.json` or the user asks to

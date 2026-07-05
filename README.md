@@ -150,11 +150,35 @@ Register the repository as a plugin marketplace catalog and install it:
 The marketplace URL uses the GitHub repo slug `backlog-campaign`; the installed plugin id is `bc-campaign`.
 
 ### Pathway C: Generic / skills.sh Registry
-Install using the standard registry:
+
+Install the skill from the skills.sh registry (repo slug + explicit skill id):
+
 ```bash
-npx skills add CorentinLumineau/backlog-campaign
+npx skills add CorentinLumineau/backlog-campaign --skill bc-campaign -y
 ```
-Any compatible agent will read the root `SKILL.md` and load the associated rules from the `references/` directory.
+
+After install, attach or invoke **`bc-campaign`** in your agent UI. Compatible agents read the root `SKILL.md` and load rules from the `references/` directory.
+
+**Naming:** The GitHub repository is `backlog-campaign`; the installable skill id is **`bc-campaign`**. Always pass `--skill bc-campaign` — the repo slug alone does not select the skill when the repo exposes multiple skills or a non-default skill name.
+
+**Version pinning:** `CorentinLumineau/backlog-campaign@v0.4.0` or `@0.4.0` on the repo slug is **not supported** by the current `skills` CLI (v1.5.x). The CLI treats `@…` as a skill name, not a git ref or semver tag. To pin a release, check out a release tag in a fork/submodule or re-run `skills add` after upstream publishes; do not use `@version` syntax on the repo slug.
+
+**Install scope:**
+
+| Scope | Flag | Installs to | When to use |
+|-------|------|-------------|-------------|
+| Project (default) | _(none)_ | Current repo / agent project dirs | Team-pinned install per codebase; reproducible with lockfile |
+| Global | `-g` / `--global` | User-level skill store | Personal workstation default across many repos |
+
+Examples:
+
+```bash
+# Project (default)
+npx skills add CorentinLumineau/backlog-campaign --skill bc-campaign -y
+
+# Global
+npx skills add CorentinLumineau/backlog-campaign --skill bc-campaign -g -y
+```
 
 ### Pathway D: Antigravity / Gemini Native
 

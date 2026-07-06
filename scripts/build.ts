@@ -380,9 +380,6 @@ if (buildCodex) {
 if (fs.existsSync(path.join(root, 'SKILL.md'))) {
   fs.unlinkSync(path.join(root, 'SKILL.md'));
 }
-if (fs.existsSync(path.join(root, 'marketplace.json'))) {
-  fs.unlinkSync(path.join(root, 'marketplace.json'));
-}
 if (buildCodex && fs.existsSync(path.join(root, 'codex-marketplace.json'))) {
   fs.unlinkSync(path.join(root, 'codex-marketplace.json'));
 }
@@ -508,14 +505,14 @@ const pluginDir = path.join(root, '.claude-plugin');
 if (!fs.existsSync(pluginDir)) fs.mkdirSync(pluginDir, { recursive: true });
 fs.writeFileSync(path.join(pluginDir, 'plugin.json'), JSON.stringify(pluginMeta, null, 2), 'utf-8');
 
-// 8. Generate Claude Code Marketplace Catalog (marketplace.json)
+// 8. Generate Claude Code Marketplace Catalog (.claude-plugin/marketplace.json)
 const marketplaceJson = {
   name: 'bc-campaign-marketplace',
   description: 'Backlog Campaign Marketplace',
   owner: { name: 'CorentinLumineau' },
   plugins: [{ ...pluginMeta, source: '.' }],
 };
-fs.writeFileSync(path.join(root, 'marketplace.json'), JSON.stringify(marketplaceJson, null, 2), 'utf-8');
+fs.writeFileSync(path.join(pluginDir, 'marketplace.json'), JSON.stringify(marketplaceJson, null, 2), 'utf-8');
 
 // 9. Compile Target E: Codex CLI Native Support (default build — #31)
 if (buildCodex) {

@@ -9,7 +9,7 @@ supersedes: ADR-002
 
 ## Context
 
-`bc-synthesizer` was introduced in [ADR-002](ADR-002-synthesizer-extraction.md) as a dedicated LLM aggregation hop after `bc-reviewer`. The [YAGNI audit](../audits/analysis-bc-synthesizer-yagni.md) found:
+`bc-synthesizer` was introduced in [ADR-002](ADR-002-synthesizer-extraction.md) as a dedicated LLM aggregation hop after `bc-reviewer`. The YAGNI review found:
 
 - No demonstrated ledger benefit from LLM cross-correlation or `multi_source` promotion
 - Pass-through behavior on most reviews (reviewer already emits structured JSON)

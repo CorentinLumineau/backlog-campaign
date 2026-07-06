@@ -28,6 +28,17 @@ State is persisted in `.bc-campaign/queue.json` with `phase` and `status` fields
 - Positive: Queue DAG scheduling composes with wave computation
 - Negative: Phase transitions must be documented in playbooks; drift caught by `verify.ts`
 
+## Amendment
+
+- Line 20 ("Review — V-code audit via reviewer + synthesizer pipeline") is superseded by
+  [ADR-003](ADR-003-synthesizer-removal.md): the LLM synthesizer agent was removed in favor
+  of deterministic `scripts/review-aggregate.ts`.
+- Line 23 (`.bc-campaign/queue.json`) is superseded by the runtime-directory migration to
+  `.blackhole/queue.json` — see `README.md` § "Migrating from bc-campaign".
+
+Original decision text above is left unedited for historical accuracy; this section
+records what has since changed.
+
 ## References
 
 - `src/references/phase-*.md`

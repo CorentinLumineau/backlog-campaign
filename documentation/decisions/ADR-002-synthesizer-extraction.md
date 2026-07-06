@@ -36,7 +36,7 @@ Shared infrastructure lives in `src/references/review-core.md`.
 
 ## Supersession
 
-Superseded by [ADR-003](ADR-003-synthesizer-removal.md) — deterministic `scripts/review-aggregate.ts` replaces the LLM synthesizer agent per [`documentation/audits/analysis-bc-synthesizer-yagni.md`](../audits/analysis-bc-synthesizer-yagni.md).
+Superseded by [ADR-003](ADR-003-synthesizer-removal.md) — deterministic `scripts/review-aggregate.ts` replaces the LLM synthesizer agent per the YAGNI review documented in ADR-003's Context section.
 
 ## References
 

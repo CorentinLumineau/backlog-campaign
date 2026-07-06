@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { spawnSync } from 'child_process';
-import { AGENTS_BUILD_ROOT, AGENTS_BUILD_AGENT_DIR } from './build.ts';
+import { AGENTS_BUILD_ROOT, AGENTS_BUILD_AGENT_DIR, DISTRIBUTION_ROOT } from './build.ts';
 
 const root = path.resolve(import.meta.dirname, '..');
 const srcDir = path.join(root, 'src');
@@ -396,6 +396,62 @@ const checkGeminiBuild = () => {
   else pass('V-GEMINI-01');
 };
 
+// V-GEMINI-02: Gemini/Antigravity distribution bundle (plugins/backlog-campaign/) shape check —
+// independent from V-GEMINI-01's workspace-tree assertions (see build.ts assertDistributionTree).
+export const evaluateDistributionBundle = (destRoot: string): string[] => {
+  const errors: string[] = [];
+
+  for (const rule of ['bc-campaign-protocol.md', 'bc-campaign-state.md', 'bc-campaign-vcodes.md']) {
+    if (!fs.existsSync(path.join(destRoot, 'rules', rule))) {
+      errors.push(`missing rules/${rule}`);
+    }
+  }
+
+  const skillPath = path.join(destRoot, 'skills', 'bc-campaign', 'SKILL.md');
+  if (!fs.existsSync(skillPath)) {
+    errors.push('missing skills/bc-campaign/SKILL.md');
+  }
+
+  const refsDir = path.join(destRoot, 'skills', 'bc-campaign', 'references');
+  if (!fs.existsSync(refsDir) || fs.readdirSync(refsDir).length === 0) {
+    errors.push('missing or empty skills/bc-campaign/references/');
+  }
+
+  const manifestPath = path.join(destRoot, 'plugin.json');
+  if (!fs.existsSync(manifestPath)) {
+    errors.push('missing plugin.json');
+  } else {
+    try {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+      for (const key of ['$schema', 'name', 'version', 'description']) {
+        if (!manifest[key]) errors.push(`plugin.json missing ${key}`);
+      }
+    } catch {
+      errors.push('plugin.json invalid JSON');
+    }
+  }
+
+  if (fs.existsSync(path.join(destRoot, 'agents'))) {
+    errors.push('distribution bundle must not contain agents/ (AC4)');
+  }
+
+  return errors;
+};
+
+const checkGeminiDistributionBundle = () => {
+  if (process.env.VERIFY_SKIP_BUILD !== '1') {
+    const build = spawnSync('bun', ['run', 'build', '--gemini'], { cwd: root, encoding: 'utf-8' });
+    if (build.status !== 0) {
+      fail('V-GEMINI-02', `build --gemini failed: ${build.stderr || build.stdout}`);
+      return;
+    }
+  }
+
+  const errors = evaluateDistributionBundle(path.join(root, DISTRIBUTION_ROOT));
+  if (errors.length) fail('V-GEMINI-02', errors.join('; '));
+  else pass('V-GEMINI-02');
+};
+
 // V-CODEX-01 through V-CODEX-04: Codex CLI compile outputs (default verify — #31)
 const checkCodexBuild = () => {
   if (process.env.VERIFY_SKIP_BUILD !== '1') {
@@ -644,6 +700,7 @@ export const BUILD_OUTPUT_PATTERNS = [
   '.claude-plugin/',
   '.gemini-plugin/',
   '.agents/build/',
+  'plugins/',
   'SKILL.md',
   'marketplace.json',
   '.codex-plugin/',
@@ -726,6 +783,7 @@ const main = () => {
   checkCheckpointAlignment();
   checkBuild();
   checkGeminiBuild();
+  checkGeminiDistributionBundle();
   checkCodexBuild();
 
   const expectedChecks = Number(parseGroundTruth().verify_check_count) || 8;

@@ -13,7 +13,6 @@ import {
   serializeCodexAgentYaml,
   compileGeminiTree,
   writeGeminiManifest,
-  assertDistributionTree,
   compileCodexTree,
   generatedMarkerLine,
   buildClaudePluginManifest,
@@ -140,61 +139,6 @@ describe('writeGeminiManifest', () => {
       expect(fs.existsSync(destPath)).toBe(true);
       const written = JSON.parse(fs.readFileSync(destPath, 'utf-8'));
       expect(written).toEqual(manifest);
-    } finally {
-      fs.rmSync(destRoot, { recursive: true, force: true });
-    }
-  });
-});
-
-describe('assertDistributionTree', () => {
-  const populateFixtureTree = (destRoot: string) => {
-    compileGeminiTree(
-      destRoot,
-      'plugins/blackhole',
-      'plugins/blackhole/rules/blackhole-vcodes.md',
-      { includeAgents: false }
-    );
-    writeGeminiManifest(path.join(destRoot, 'plugin.json'), buildGeminiPluginManifest('1.0.0'));
-  };
-
-  test('passes (returns void, no throw) on a fully-populated fixture tree', () => {
-    const destRoot = makeTempDir();
-    try {
-      populateFixtureTree(destRoot);
-      expect(() => assertDistributionTree(destRoot)).not.toThrow();
-    } finally {
-      fs.rmSync(destRoot, { recursive: true, force: true });
-    }
-  });
-
-  test('throws when rules/ has fewer than 3 recognized rule files', () => {
-    const destRoot = makeTempDir();
-    try {
-      populateFixtureTree(destRoot);
-      fs.unlinkSync(path.join(destRoot, 'rules', 'blackhole-state.md'));
-      expect(() => assertDistributionTree(destRoot)).toThrow();
-    } finally {
-      fs.rmSync(destRoot, { recursive: true, force: true });
-    }
-  });
-
-  test('throws when skills/blackhole/SKILL.md is missing', () => {
-    const destRoot = makeTempDir();
-    try {
-      populateFixtureTree(destRoot);
-      fs.unlinkSync(path.join(destRoot, 'skills', 'blackhole', 'SKILL.md'));
-      expect(() => assertDistributionTree(destRoot)).toThrow();
-    } finally {
-      fs.rmSync(destRoot, { recursive: true, force: true });
-    }
-  });
-
-  test('throws when plugin.json is missing at destRoot', () => {
-    const destRoot = makeTempDir();
-    try {
-      populateFixtureTree(destRoot);
-      fs.unlinkSync(path.join(destRoot, 'plugin.json'));
-      expect(() => assertDistributionTree(destRoot)).toThrow();
     } finally {
       fs.rmSync(destRoot, { recursive: true, force: true });
     }

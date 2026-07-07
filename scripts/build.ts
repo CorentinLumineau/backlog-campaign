@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { projectIdentity } from './project-identity.ts';
+import { geminiWorkspaceTreeErrors, distributionTreeErrors, codexTreeErrors, INSTRUCTIONS_MARKER } from './tree-shape.ts';
 
 const root = path.resolve(import.meta.dirname, '..');
 const srcDir = path.join(root, 'src');
@@ -78,7 +79,7 @@ export const serializeCodexAgentYaml = (fm: Record<string, string>, bodyContent:
     .split('\n')
     .map((line) => (line ? `  ${line}` : ''))
     .join('\n');
-  yaml += `instructions: |\n${indentedBody}\n`;
+  yaml += `${INSTRUCTIONS_MARKER}\n${indentedBody}\n`;
   return yaml;
 };
 
@@ -342,43 +343,6 @@ export const writeGeminiManifest = (destPath: string, manifest: Record<string, u
   fs.writeFileSync(destPath, JSON.stringify(manifest, null, 2), 'utf-8');
 };
 
-const assertGeminiTree = (destRoot: string, label: string) => {
-  const agentsDir = path.join(destRoot, 'agents');
-  const rulesDir = path.join(destRoot, 'rules');
-  const agentFiles = fs.existsSync(agentsDir)
-    ? fs.readdirSync(agentsDir).filter((f) => AGENT_MD_FILES.has(f))
-    : [];
-  const ruleFiles = fs.existsSync(rulesDir)
-    ? fs.readdirSync(rulesDir).filter((f) => RULES_LIST.includes(f))
-    : [];
-  if (agentFiles.length !== 5) {
-    throw new Error(`Gemini ${label}: expected 5 agents, got ${agentFiles.length}`);
-  }
-  if (ruleFiles.length !== 3) {
-    throw new Error(`Gemini ${label}: expected 3 rules, got ${ruleFiles.length}`);
-  }
-};
-
-/** Distribution bundle shape check — deliberately separate from assertGeminiTree: this tree
- * requires zero agents (AC4), the opposite invariant of the 5-agent workspace tree. */
-export const assertDistributionTree = (destRoot: string) => {
-  const rulesDir = path.join(destRoot, 'rules');
-  const ruleFiles = fs.existsSync(rulesDir)
-    ? fs.readdirSync(rulesDir).filter((f) => RULES_LIST.includes(f))
-    : [];
-  if (ruleFiles.length < 3) {
-    throw new Error(`Gemini distribution: expected 3 rules, got ${ruleFiles.length}`);
-  }
-  const skillPath = path.join(destRoot, 'skills', 'blackhole', 'SKILL.md');
-  if (!fs.existsSync(skillPath)) {
-    throw new Error('Gemini distribution: missing skills/blackhole/SKILL.md');
-  }
-  const manifestPath = path.join(destRoot, 'plugin.json');
-  if (!fs.existsSync(manifestPath)) {
-    throw new Error('Gemini distribution: missing plugin.json');
-  }
-};
-
 export const compileCodexTree = (rootDir: string, agentDir: string, rulesPath: string) => {
   compileFolder('agents', path.join(rootDir, 'codex-agents'), agentDir, rulesPath, 'codex', true);
   processFile(
@@ -398,30 +362,6 @@ export const compileCodexTree = (rootDir: string, agentDir: string, rulesPath: s
     rulesPath,
     'codex'
   );
-};
-
-const assertCodexTree = (rootDir: string) => {
-  const agentsDir = path.join(rootDir, 'codex-agents');
-  const agentFiles = fs.existsSync(agentsDir)
-    ? fs.readdirSync(agentsDir).filter((f) => AGENT_YAML_FILES.has(f))
-    : [];
-  if (agentFiles.length !== 5) {
-    throw new Error(`Codex: expected 5 agent YAML files, got ${agentFiles.length}`);
-  }
-  for (const file of agentFiles) {
-    const content = fs.readFileSync(path.join(agentsDir, file), 'utf-8');
-    if (!content.includes('instructions: |')) {
-      throw new Error(`Codex: ${file} missing instructions block scalar`);
-    }
-  }
-  const skillPath = path.join(rootDir, 'codex-skills', 'blackhole', 'SKILL.md');
-  if (!fs.existsSync(skillPath)) {
-    throw new Error('Codex: missing codex-skills/blackhole/SKILL.md');
-  }
-  const refsDir = path.join(rootDir, 'codex-skills', 'blackhole', 'references');
-  if (!fs.existsSync(refsDir) || fs.readdirSync(refsDir).length === 0) {
-    throw new Error('Codex: missing or empty codex-skills/blackhole/references/');
-  }
 };
 
 const main = () => {
@@ -546,7 +486,12 @@ if (buildGemini) {
   console.log('Compiling Target D (Gemini/Antigravity workspace — .agents/build/)...');
   const agentsBuildRoot = path.join(root, AGENTS_BUILD_ROOT);
   compileGeminiTree(agentsBuildRoot, AGENTS_BUILD_AGENT_DIR, AGENTS_BUILD_VCODES);
-  assertGeminiTree(agentsBuildRoot, 'workspace');
+  const workspaceAgentsDir = path.join(agentsBuildRoot, 'agents');
+  const workspaceAgentFiles = fs.existsSync(workspaceAgentsDir)
+    ? fs.readdirSync(workspaceAgentsDir).filter((f) => AGENT_MD_FILES.has(f))
+    : [];
+  const workspaceErrors = geminiWorkspaceTreeErrors(agentsBuildRoot, 'workspace', RULES_LIST, workspaceAgentFiles);
+  if (workspaceErrors.length) throw new Error(workspaceErrors.join('; '));
 
   console.log('Generating Gemini Plugin manifest...');
   const geminiPluginMeta = buildGeminiPluginManifest(version);
@@ -561,7 +506,12 @@ if (buildGemini) {
   const distributionRoot = path.join(root, DISTRIBUTION_ROOT);
   compileGeminiTree(distributionRoot, DISTRIBUTION_AGENT_DIR, DISTRIBUTION_VCODES, { includeAgents: false });
   writeGeminiManifest(path.join(distributionRoot, 'plugin.json'), geminiPluginMeta);
-  assertDistributionTree(distributionRoot);
+  const distributionErrors = distributionTreeErrors(
+    distributionRoot,
+    path.join(distributionRoot, 'plugin.json'),
+    RULES_LIST
+  );
+  if (distributionErrors.length) throw new Error(distributionErrors.join('; '));
 }
 
 // 6. Generate Claude Code Plugin Manifest (.claude-plugin/plugin.json)
@@ -581,7 +531,12 @@ if (buildCodex) {
   const codexAgentDir = 'codex-skills';
   const codexVcodesPath = 'codex-skills/blackhole/references/blackhole-vcodes.md';
   compileCodexTree(root, codexAgentDir, codexVcodesPath);
-  assertCodexTree(root);
+  const codexAgentsDir = path.join(root, 'codex-agents');
+  const codexAgentFiles = fs.existsSync(codexAgentsDir)
+    ? fs.readdirSync(codexAgentsDir).filter((f) => AGENT_YAML_FILES.has(f))
+    : [];
+  const codexErrors = codexTreeErrors(root, codexAgentFiles);
+  if (codexErrors.length) throw new Error(codexErrors.join('; '));
 
   console.log('Generating Codex Plugin manifest...');
   const codexPluginMeta = buildCodexPluginManifest(version);

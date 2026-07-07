@@ -23,7 +23,7 @@ const buildAll = args.has('--all');
 const buildGemini = buildAll || args.has('--gemini');
 const buildCodex = !args.has('--no-codex');
 
-const cleanDir = (dirPath: string) => {
+export const cleanDir = (dirPath: string) => {
   if (fs.existsSync(dirPath)) {
     fs.rmSync(dirPath, { recursive: true, force: true });
   }
@@ -371,7 +371,11 @@ cleanDir(path.join(root, 'agents'));
 cleanDir(path.join(root, 'skills'));
 cleanDir(path.join(root, 'references'));
 cleanDir(path.join(root, '.cursor'));
-cleanDir(path.join(root, '.claude'));
+// Only clean the subdirs build.ts actually writes — `.claude/` also holds
+// maintainer state (initiatives/, progress.md) that must survive a rebuild.
+cleanDir(path.join(root, '.claude', 'agents'));
+cleanDir(path.join(root, '.claude', 'rules'));
+cleanDir(path.join(root, '.claude', 'skills'));
 cleanDir(path.join(root, '.claude-plugin'));
 if (buildGemini) {
   cleanDir(path.join(root, AGENTS_BUILD_ROOT));

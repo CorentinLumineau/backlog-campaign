@@ -17,6 +17,7 @@ import {
   generatedMarkerLine,
   buildClaudePluginManifest,
   buildClaudeMarketplace,
+  cleanDir,
 } from './build.ts';
 import { projectIdentity } from './project-identity.ts';
 
@@ -95,6 +96,52 @@ describe('buildGeminiPluginManifest', () => {
     const manifest = buildGeminiPluginManifest('1.2.3');
     expect(manifest.description).toBe(projectIdentity.description);
     expect(manifest.keywords).toEqual([projectIdentity.name, 'gemini', ...projectIdentity.keywordsBase]);
+  });
+});
+
+describe('cleanDir', () => {
+  test('removes an existing directory recursively', () => {
+    const destRoot = makeTempDir();
+    try {
+      const nested = path.join(destRoot, 'a', 'b');
+      fs.mkdirSync(nested, { recursive: true });
+      fs.writeFileSync(path.join(nested, 'file.txt'), 'x');
+
+      cleanDir(path.join(destRoot, 'a'));
+
+      expect(fs.existsSync(path.join(destRoot, 'a'))).toBe(false);
+    } finally {
+      fs.rmSync(destRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('is a no-op when the directory does not exist', () => {
+    const destRoot = makeTempDir();
+    try {
+      const missing = path.join(destRoot, 'does-not-exist');
+      expect(() => cleanDir(missing)).not.toThrow();
+      expect(fs.existsSync(missing)).toBe(false);
+    } finally {
+      fs.rmSync(destRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('leaves sibling directories untouched (regression: cleaning .claude/agents must not remove .claude/initiatives)', () => {
+    const destRoot = makeTempDir();
+    try {
+      const claudeDir = path.join(destRoot, '.claude');
+      fs.mkdirSync(path.join(claudeDir, 'agents'), { recursive: true });
+      fs.mkdirSync(path.join(claudeDir, 'initiatives'), { recursive: true });
+      fs.writeFileSync(path.join(claudeDir, 'progress.md'), 'in progress');
+
+      cleanDir(path.join(claudeDir, 'agents'));
+
+      expect(fs.existsSync(path.join(claudeDir, 'agents'))).toBe(false);
+      expect(fs.existsSync(path.join(claudeDir, 'initiatives'))).toBe(true);
+      expect(fs.readFileSync(path.join(claudeDir, 'progress.md'), 'utf-8')).toBe('in progress');
+    } finally {
+      fs.rmSync(destRoot, { recursive: true, force: true });
+    }
   });
 });
 

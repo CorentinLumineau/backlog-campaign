@@ -1,20 +1,30 @@
 ## Current Status
 
-Milestone 1 (Identity SSOT) of the `blackhole-scoped-extraction` initiative is complete and
-reviewed (APPROVED, 1 review-fix iteration) on branch `blackhole/milestone-1-identity-ssot`.
-Plan: `documentation/milestones/_active/blackhole-scoped-extraction/milestone-1.md`.
-Ready to commit.
+Milestone 1 (Identity SSOT) — committed (PR #90). Milestone 2 (Tree-Shape SSOT) of the
+`blackhole-scoped-extraction` initiative is implemented, reviewed (3 MEDIUM findings, all
+fixed), and gate-verified on the SAME branch `blackhole/milestone-1-identity-ssot`, per user
+request to bundle M1-M3 into one PR. Ready to commit.
 
 ## Completed Tasks
 
-- **2026-07-06** (uncommitted, branch `blackhole/milestone-1-identity-ssot`): Milestone 1 —
-  `scripts/project-identity.ts` + test extracted; `scripts/build.ts` manifest builders
-  (`buildGeminiPluginManifest`, `buildCodexPluginManifest`, `buildCodexMarketplace`,
+- **2026-07-06** (commit `f545fd1`, branch `blackhole/milestone-1-identity-ssot`, PR #90):
+  Milestone 1 — `scripts/project-identity.ts` + test extracted; `scripts/build.ts` manifest
+  builders (`buildGeminiPluginManifest`, `buildCodexPluginManifest`, `buildCodexMarketplace`,
   `buildClaudePluginManifest`, `buildClaudeMarketplace`) wired to it; `build.ts`'s own
   pre-existing duplicate `package.json` read eliminated. Review-fix loop (1 iteration):
   3-agent swarm found 1 HIGH (V-TEST-01, fixed via extraction) + 1 LOW (accepted as-is per
   reviewer's own recommendation). `bun test` 158/158 pass, `bun run verify` 18/18 pass,
   byte-for-byte manifest regression confirmed twice (before and after the review-fix).
+- **2026-07-07** (uncommitted, same branch): Milestone 2 — `scripts/tree-shape.ts` + test
+  extracted; `assertGeminiTree`/`assertDistributionTree`/`assertCodexTree` removed from
+  `build.ts`; `verify.ts`'s local `validatePluginTreeShape` removed and its Codex checks
+  partially folded (safe, non-entangled subset only — 2 documented deviations from the plan's
+  literal wording, see milestone-2.md). Review-fix loop (1 iteration): 3-agent swarm found
+  3 MEDIUM findings (V-DRY-03 marker duplication, V-DRY-02 predicate duplication, V-KISS-01
+  untested substring-partition contract) — all fixed via TDD (`INSTRUCTIONS_MARKER` constant,
+  `hasInstructionsBlock` predicate, 3 coupling-contract tests). `bun test` 180/180 pass,
+  `bun run verify` 18/18 pass (with `VERIFY_SKIP_BUILD=1`), byte-for-byte identical output
+  across the full compiled tree, re-confirmed after the fix round. Ready to commit.
 
 ## Failed Approaches
 
@@ -26,9 +36,9 @@ Ready to commit.
 
 ## Next Steps
 
-1. Commit Milestone 1 on `blackhole/milestone-1-identity-ssot`
-2. Milestone 2 — `scripts/tree-shape.ts`, per `documentation/milestones/_active/blackhole-scoped-extraction/milestone-2.md`
-3. Milestone 3 — Governance & Cleanup, per `documentation/milestones/_active/blackhole-scoped-extraction/milestone-3.md`
+1. Commit Milestone 2 on `blackhole/milestone-1-identity-ssot` (same branch/PR as M1)
+2. Milestone 3 — Governance & Cleanup, per `documentation/milestones/_active/blackhole-scoped-extraction/milestone-3.md` (same branch/PR)
+3. Update PR #90's description once all 3 milestones are committed
 
 ## Known Limitations
 

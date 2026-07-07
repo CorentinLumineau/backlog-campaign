@@ -1,10 +1,12 @@
 ---
 type: plan
-status: current
+status: completed
+completedAt: 2026-07-07
 review_trigger: "on milestone completion"
 created: 2026-07-06
-last_updated: 2026-07-06
+last_updated: 2026-07-07
 plan_base_commit: 015e7cc
+pr: TBD — patched by git-pr
 related:
   - documentation/architecture/retrospective-blackhole.md
   - documentation/audits/architecture-coherence.md
@@ -12,6 +14,35 @@ initiative: blackhole-scoped-extraction
 milestone: 2 of 3 (Tree-Shape SSOT)
 track: quick
 ---
+
+## Completion
+
+- **status**: completed
+- **completedAt**: 2026-07-07
+- **pr**: TBD — patched by git-pr
+
+### Shipped
+
+- `scripts/tree-shape.ts` (new) — `validatePluginTreeShape`, `geminiWorkspaceTreeErrors`, `distributionTreeErrors`, `codexTreeErrors`, all returning `string[]` (never throwing), zero imports from `build.ts`/`verify.ts`. Preserves the 5-agents-required vs. 0-agents-required inversion between the Gemini workspace tree and distribution bundle as two distinct functions.
+- `scripts/tree-shape.test.ts` (new) — 21 unit tests, including every ported fixture case from the old `build.test.ts:149-202` (`assertDistributionTree`) and `verify.build.test.ts` (`evaluateDistributionBundle`) blocks.
+- `scripts/build.ts` — `assertGeminiTree`/`assertDistributionTree`/`assertCodexTree` removed; the 3 call sites in `main()` now compute the relevant agent-file list and wrap `tree-shape.ts`'s error-returning functions with `if (errors.length) throw new Error(...)`, preserving exact throw-on-invalid behavior and call order (Gemini workspace assertion still runs before its detached manifest is written).
+- `scripts/verify.ts` — local `validatePluginTreeShape` removed, replaced by the `tree-shape.ts` import; `checkGeminiBuild` now passes `RULES_LIST` explicitly (kept its own agent-count check and the real-manifest-path call, preserving the manifest-content validation that a naive `geminiWorkspaceTreeErrors` reuse would have silently dropped — see Deviation note below); `evaluateDistributionBundle` is now a one-line wrapper over `distributionTreeErrors`; `checkCodexSkillFile`/`checkCodexAgentFiles` fold in the safe, non-entangled subset of `codexTreeErrors` (5-agent-count, SKILL.md existence, non-empty references — the last one is new coverage, closing a gap that existed only in `build.ts`'s old assertion) via a documented substring-based partition.
+- **Deviation from the plan's literal Task 4 wording** (documented per the Hard Choice Protocol): the per-file `instructions: |` presence check inside `checkCodexAgentFiles`'s loop was deliberately left as its own local implementation rather than folded into `codexTreeErrors`, because it's entangled with a `continue` short-circuit guarding the other per-file field checks (name/description/permissionMode/model/disallowedTools/instructions-length) — extracting it risked subtly changing control flow for a 2-line DRY gain. Also, `checkGeminiBuild` was NOT switched to `geminiWorkspaceTreeErrors` (which hardcodes `manifestPath: null` for build.ts's pre-manifest-write call site) — doing so would have silently dropped verify.ts's post-hoc manifest-content check (`$schema`/`name`/`version`/`description` presence), since verify.ts runs after the manifest exists and should validate it. Instead `checkGeminiBuild` calls the general `validatePluginTreeShape` directly with the real manifest path.
+- Verified byte-for-byte identical output across the full compiled tree (`rules/`, `agents/`, `skills/`, `references/`, `.cursor/`, `.claude-plugin/`, `.codex-plugin/`, `codex-agents/`, `codex-skills/`, `.gemini-plugin/`, `plugins/blackhole/`, `codex-marketplace.json`, `SKILL.md`) pre/post change, re-confirmed after the review-fix round below. `bun test`: 180/180 pass. `bun run verify` (with `VERIFY_SKIP_BUILD=1` to avoid re-triggering a pre-existing, unrelated `.claude/` wipe bug — see Progress Log): 18/18 pass.
+
+### Review-Fix Round (1 iteration)
+
+3-agent swarm (quality, security, gates) found 3 MEDIUM findings (all pareto_score 48, no CRITICAL/HIGH), all fixed via TDD:
+- **V-DRY-03**: `'instructions: |'` was duplicated across `tree-shape.ts`, `verify.ts` (×2), and `build.ts` with no shared constant — this milestone's own extraction added a 3rd independent copy. Fixed: exported `INSTRUCTIONS_MARKER` from `tree-shape.ts`, referenced at all 4 sites (`build.ts`'s YAML serializer, `tree-shape.ts`'s `codexTreeErrors`, `verify.ts`'s per-file check).
+- **V-DRY-02**: `checkCodexAgentFiles`'s per-file loop re-implemented the same boolean check `codexTreeErrors` already computes. Fixed: exported a pure `hasInstructionsBlock(content)` predicate from `tree-shape.ts`, called from both sites — kept the `continue`-based control flow local to `verify.ts` (unchanged from the original deviation rationale).
+- **V-KISS-01/V-PAT-04**: the substring-partition contract between `tree-shape.ts`'s error message wording and `verify.ts`'s `.includes(...)` filters had no test pinning it — a wording change would silently empty a filter with no test catching it. Fixed: added 3 dedicated coupling-contract tests in `tree-shape.test.ts` asserting the exact substrings (`'5 agent'`, `'SKILL.md'`, `'references'`) verify.ts's partition depends on.
+
+Re-verified after fixes: `bun test` 180/180 pass (+5 from the fix), byte-for-byte identical compiled tree, `bun run verify` 18/18 pass.
+
+### Progress Log
+
+- **2026-07-07**: Milestone completed in one session, on the same branch as Milestone 1 (`blackhole/milestone-1-identity-ssot`) per user request to bundle M1-M3 into one PR (#90).
+- **2026-07-07**: Discovered (not introduced by this milestone, but empirically triggered and confirmed while testing it): `scripts/build.ts`'s `cleanDir(path.join(root, '.claude'))` deletes the entire `.claude/` directory recursively, including tracked, non-build-output files (`.claude/initiatives/*.json`, `.claude/progress.md`). Running `bun run verify` (which internally shells out to `bun run build`/`bun run build --gemini` via 3 `spawnSync` calls — the exact hidden coupling channel flagged in the upstream retrospective, §1.3) triggers this and makes `V-BUILD-01` spuriously fail with "build left dirty output" for files that are session/tooling state, not compiled artifacts. Worked around for this session via `VERIFY_SKIP_BUILD=1` plus manual backup/restore. Recommended as a Milestone 3 follow-up or separate issue: scope `cleanDir` to only the subdirs it owns inside `.claude/` (`agents/`, `rules/`, `skills/`).
 
 # Milestone 2 — Tree-Shape SSOT (tree-shape.ts)
 

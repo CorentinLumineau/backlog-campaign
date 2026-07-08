@@ -42,6 +42,18 @@ describe('router.md local-analyze monotonicity invariant', () => {
     expect(router).toContain('V-SEC-09');
   });
 
+  test('Write protocol section explicitly instructs writing final_security_review_required, not the pre-scan value', () => {
+    // Guards against the "computed correctly but not written" gap: an agent could
+    // correctly compute final_security_review_required in the formula block and then
+    // still persist the pre-scan base_security classification by omission. The Write
+    // protocol section must name final_security_review_required explicitly so there is
+    // no ambiguity about which value gets persisted to route.security_review_required.
+    const writeProtocol = router.split('## Write protocol')[1] ?? '';
+    expect(writeProtocol.length).toBeGreaterThan(0);
+    expect(writeProtocol).toContain('final_security_review_required');
+    expect(writeProtocol).toMatch(/security_review_required/);
+  });
+
   test('never widens influence beyond plan_mode and security_review_required', () => {
     const section = router.split('## Local-analyze confidence-boost mechanism')[1] ?? '';
     expect(section.length).toBeGreaterThan(0);

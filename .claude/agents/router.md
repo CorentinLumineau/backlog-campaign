@@ -83,9 +83,20 @@ Every candidate hit from either part is recorded before verification, so discard
 stay auditable — see the ledger schema pointer below.
 
 **False-positive verification** (x-analyze Phase 2.5 parity): for every candidate match,
-re-read that one line only and classify it as `comment`, `fixture` (path contains
-`__tests__`, `.test.`, `fixtures/`, `mocks/`), `string-literal`, or `real`. Only `real`
-classifications count toward a raise.
+re-read that one line only and classify it as `comment`, `fixture`, `string-literal`, or
+`real`, using these concrete criteria, checked in this order:
+
+1. **`fixture`**: the file path contains `__tests__`, `.test.`, `fixtures/`, or `mocks/`.
+2. **`comment`**: the matched text falls after a language-appropriate comment marker earlier
+   on the same line (`//` or `/*` for JS/TS, `#` for shell/Python/YAML, `<!--` for
+   Markdown/HTML) — i.e. the comment marker's column position is less than the match's column
+   position on that line.
+3. **`string-literal`**: the matched text falls between a matching pair of quote characters
+   (`"`, `'`, or `` ` ``) on the same line — i.e. an odd number of that quote character
+   precedes the match on the line, and at least one of the same quote character follows it.
+4. **`real`**: none of the above apply.
+
+Only `real` classifications count toward a raise.
 
 **Monotonicity formula — the only legal formula**:
 
@@ -117,6 +128,12 @@ for the `local_analyze` field shape; do not re-tabulate it here (`V-DRY-01`).
 
 Two state mutations only, both via the `jq` read-modify-write + `.tmp`/`mv` atomic pattern
 (`.claude/skills/blackhole/references/blackhole-state.md`):
+
+When the local-analyze mechanism ran (§ above), the persisted `route.security_review_required`
+MUST be set to the computed `final_security_review_required` value — never the pre-scan
+`base_security` classification value. Writing `base_security` instead of
+`final_security_review_required` after the scan ran is itself a `V-SEC-09` BLOCK finding: it
+silently discards a legitimate raise and defeats the mechanism's entire safety purpose.
 
 1. **`queue.json`** — set or update the issue's `route` object in its `issues.<n>` entry.
 2. **`findings-ledger.json`** — append one `routing_decisions` row per

@@ -80,12 +80,13 @@ Path: `.blackhole/queue.json` (gitignored at runtime).
 
 **Consumer status** (per-flag, updated as ADR-004 steps land): `plan_mode`, `needs_split`,
 and `needs_design` are now read by orchestrator dispatch (`orchestrator.md` §
-Route-derived dispatch, #93); `needs_research`, `needs_investigation`, and
-`security_review_required` remain documented-but-unactioned flags (steps 6/8 — #96/#98,
-not yet implemented); the `router` agent (step 1 — #95, PR #118) has landed, but every
-issue in today's live queue still falls through the "void route" fallback and dispatches
-exactly as it did before ADR-004, only because none has re-entered Handle since #118
-merged.
+Route-derived dispatch, #93); `needs_research` and `needs_investigation` are now read by
+Handle's investigator spawn condition (`phase-handle.md` § Investigator agent, step 6 —
+#96, PR #125), and `security_review_required` is now read by the review phase's
+security-mode trigger (`review-core.md` § Security-mode review, `phase-review.md`, step 8
+— #98, PR #124); the `router` agent (step 1 — #95, PR #118) has landed, but every issue in
+today's live queue still falls through the "void route" fallback and dispatches exactly as
+it did before ADR-004, only because none has re-entered Handle since #118 merged.
 
 ### Status transitions
 

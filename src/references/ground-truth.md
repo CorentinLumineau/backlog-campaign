@@ -8,11 +8,12 @@ Machine-verified canonical values for Blackhole. `scripts/verify.ts` reads this 
 
 | coordinator | `src/agents/coordinator.md` |
 | orchestrator | `src/agents/orchestrator.md` |
+| router | `src/agents/router.md` |
 | planner | `src/agents/planner.md` |
 | implementer | `src/agents/implementer.md` |
 | reviewer | `src/agents/reviewer.md` |
 
-**agent_count:** 5
+**agent_count:** 6
 
 ## Phases
 

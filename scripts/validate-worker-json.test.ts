@@ -56,6 +56,17 @@ describe('validateWorker reviewer', () => {
     expectInvalid('reviewer', 'reviewer-missing-findings.json'));
 });
 
+describe('validateWorker router', () => {
+  test('valid routed', () => expectValid('router', 'router-routed.json'));
+  test('invalid task_type enum', () =>
+    expectInvalid('router', 'router-routed-invalid-task-type.json'));
+  test('invalid confidence out of 0-100 range', () =>
+    expectInvalid('router', 'router-routed-invalid-confidence-range.json'));
+  test('valid error', () => expectValid('router', 'router-error.json'));
+  test('invalid error missing error field', () =>
+    expectInvalid('router', 'router-error-missing-error-field.json'));
+});
+
 describe('extractWorkerJson', () => {
   test('extracts fenced json block', () => {
     const summary = `Done.\n\n\`\`\`json\n{"status":"ready","plan_path":"p.md","track":"quick","failing_checks":[],"clarification_markers":0}\n\`\`\``;
@@ -88,6 +99,11 @@ describe('resolveRole', () => {
     expect(resolveRole({ subagent_type: 'blackhole:planner' })).toBe('planner');
     expect(resolveRole({ subagent_type: 'blackhole:implementer' })).toBe('implementer');
     expect(resolveRole({ subagent_type: 'blackhole:reviewer' })).toBe('reviewer');
+  });
+
+  test('maps router subagent_type', () => {
+    expect(resolveRole({ subagent_type: 'router' })).toBe('router');
+    expect(resolveRole({ subagent_type: 'blackhole:router' })).toBe('router');
   });
 
   test('returns null for non-campaign subagents', () => {

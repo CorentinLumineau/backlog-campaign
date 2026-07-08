@@ -1,0 +1,6 @@
+{
+  "status": "error",
+  "route": null,
+  "trigger": "initial",
+  "error": "gh issue view failed: not found"
+}

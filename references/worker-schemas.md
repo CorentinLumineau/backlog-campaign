@@ -166,6 +166,49 @@ a behavior claim about the current codebase.
 
 `gain` and `effort` required only for `V-PARETO-02` findings.
 
+## Router (`router`)
+
+```json
+{
+  "status": "routed",
+  "route": {
+    "needs_split": false,
+    "needs_clarification": false,
+    "needs_research": false,
+    "needs_investigation": true,
+    "needs_design": false,
+    "task_type": "bugfix",
+    "plan_mode": "quick",
+    "security_review_required": false,
+    "confidence": { "split": 95, "design": 80, "plan_mode": 70, "security": 90 },
+    "body_hash": "<sha of issue title+body at classification time>",
+    "computed_at_phase": "handle",
+    "revision": 1
+  },
+  "trigger": "initial"
+}
+```
+
+| Field | Values | Required |
+|-------|--------|----------|
+| `status` | `routed` \| `error` | yes |
+| `route` | object | when `routed` (`null` when `error`) |
+| `trigger` | `initial` \| `clarify-resolved` \| `research-landed` \| `investigation-landed` | when `routed` |
+| `error` | string | when `status: error` |
+
+`route`'s own field names, enum values, and types are frozen — see `queue-dag.md` § `route`
+object (not re-tabulated here). The `routing_decisions` ledger row this write produces is
+documented in `findings-ledger.md` § "Routing decision records".
+
+```json
+{
+  "status": "error",
+  "route": null,
+  "trigger": "initial",
+  "error": "gh issue view failed: not found"
+}
+```
+
 ## Review aggregate (`scripts/review-aggregate.ts`)
 
 Orchestrator invokes after `reviewer` completes. Not a worker agent — deterministic script output:

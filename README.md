@@ -1,325 +1,191 @@
 # Blackhole — Agent-Agnostic Backlog Auto-Solver
 
-An automated, **fully agent-agnostic** software development lifecycle (SDLC) loop designed to systematically resolve your repository's entire issue backlog. 
+Blackhole takes an open issue backlog and drives it to zero, autonomously — one PR per issue,
+reviewed, merged, looped — without running the same rigid pipeline on every issue regardless of
+what it actually needs.
 
-**Blackhole is 100% agent-agnostic**: it operates over a project-local standard state ledger (`queue.json` and `findings-ledger.json`) and markdown instruction manuals. Any agentic system (such as Claude Code, Cursor, Antigravity, or custom shell/API agents) can run the loop. 
+A **router agent** classifies each issue once and the orchestrator derives everything downstream
+from that classification: whether it needs a full plan or just a rationale record, whether it
+needs a design decision or an investigation first, how strictly Implement re-verifies behavior,
+whether a human has to sign off before anything proceeds. A one-line fix and a genuine
+architectural decision no longer pay the same cost.
 
-To deliver a premium developer experience, the project provides **native, out-of-the-box target structures** for:
-- **Cursor Native**: MDC rules, custom agents, and skills integrated directly under the root (accessible via a single `.cursor` submodule).
-- **Claude Code Native**: Pre-compiled project rules (`.claude/rules/`), project agents (`.claude/agents/`), and a validated plugin manifest (`.claude-plugin/plugin.json`).
-- **Standard Registry**: Direct compatibility with the `skills.sh` registry and general-purpose markdown parsers.
-
-The loop runs autonomously in the background—spinning up parallel worker agents in isolated git worktrees to write tests, implement solutions, audit PR quality, and merge changes until the backlog is completely empty.
+**100% agent-agnostic**: state lives in a project-local `.blackhole/` ledger and markdown
+instruction manuals — any agentic system can run the loop. Native, pre-compiled targets ship for
+Claude Code, Cursor, Antigravity, Codex CLI, and the `skills.sh` registry.
 
 ---
 
-## 🎯 Concrete Goal: Zero Open Issues, Zero Manual Triage
+## Start here
 
-The goal of Blackhole is to take an open backlog on your forge (GitHub, GitLab, etc.) and automate the entire software development lifecycle (SDLC) for every issue:
+| I want to... | Go to |
+|---|---|
+| Run the campaign right now | [Quickstart](#quickstart) below |
+| Understand how routing decisions get made, and what workflows are covered | [Adaptive Routing](documentation/architecture/adaptive-routing.md) |
+| See the repo layout, build pipeline, source-vs-generated boundary | [Architecture map](documentation/architecture.md) |
+| Read the design rationale for the routing system | [ADR-004](documentation/decisions/ADR-004-adaptive-phase-routing.md) |
+| Install on a specific platform | [Installation Paths](#-installation-paths) below |
+| Contribute or run the build locally | [Development & Compilation](#-development--compilation) below |
+
+---
+
+## Quickstart
+
+```bash
+# Claude Code / Codex CLI
+/goal run blackhole until empty
+
+# Cursor / Antigravity (Multitask Mode)
+@coordinator run the campaign
+```
+
+That's it. The coordinator bootstraps `.blackhole/` state, syncs your forge's open issues, spawns
+a background orchestrator, and the loop runs until the backlog is empty — surfacing a chat gate
+only when something is genuinely ambiguous or architecturally significant.
+
+Full platform-specific setup: [Installation Paths](#-installation-paths).
+
+---
+
+## What it actually does
 
 ```mermaid
 flowchart LR
-  Ingest[0. Reconcile Forge Issues] --> Handle[1. Handle & Clarify]
-  Handle --> Plan[2. Design & Touch-Paths]
-  Plan --> Implement[3. TDD Worktree Implementation]
-  Implement --> Review[4. Anti-Slop Audit Review]
-  Review --> Merge[5. Auto-Merge & Linkage]
+  Ingest[Reconcile forge issues] --> Route[Router: classify]
+  Route --> Chain[Orchestrator: derive the right chain]
+  Chain --> Implement[Isolated worktree, TDD]
+  Implement --> Review[Audit review]
+  Review --> Merge[Auto-merge + linkage]
   Merge --> Ingest
 ```
 
-- **Parallel Workers**: The orchestrator schedules multiple worker subagents concurrently in isolated git worktrees. Review uses a reviewer → `review-aggregate.ts` pipeline per PR.
-- **TDD Enforcement**: Workers must write unit tests first before making changes.
-- **Plan-Conformance Gates**: Workers are blocked if they modify files outside their declared Touch-Paths or introduce database/API schema drift.
-- **PR & Merge Hygiene**: Pull requests are automatically created, linked with `Closes #N` tags, audited for AI-generated code slop, and merged when green.
+- **Adaptive, not fixed.** The router decides per-issue whether a design step, an investigation,
+  external research, or none of those is needed — see [Adaptive Routing](documentation/architecture/adaptive-routing.md)
+  for the full mechanics and the complete workflow-coverage table.
+- **Parallel workers.** Non-overlapping issues run concurrently in isolated git worktrees.
+- **TDD enforced** for the default execution mode; refactor and docs-only issues get their own
+  matched discipline (zero-regression test-suite invariant, staleness/drift checks).
+- **Plan-conformance gates.** Workers are blocked from editing outside their declared Touch-Paths
+  or introducing undeclared schema drift.
+- **PR hygiene.** Every PR carries `Closes #N`, is audited for AI-slop and security findings, and
+  merges only when green.
 
 ---
 
-## 👥 Human-in-the-Loop (HITL) & Feedback Intake
+## Human-in-the-loop, briefly
 
-Blackhole integrates the developer seamlessly into the automation loop to resolve ambiguity and intake new directions:
+Two kinds of gate, by design: most routing flags act autonomously above a confidence threshold
+and fall back to a cautious default below it — no round-trip needed for the common case.
+Architectural decisions and genuine ambiguity always block on an async `AskQuestion`, resolved
+whenever you next engage — never a live synchronous wait. You can also drop new requests or
+corrections directly in chat at any time; they get triaged and filed as issues automatically.
 
-1. **Clarification Gates (Ambiguity Blockers)**: When a worker or planner agent encounters vague requirements, product/UX trade-offs, or destructive operations, the orchestrator sets the issue's queue state to `status: blocked` and `notes: awaiting-user-clarification`. Spawns are suspended, and the coordinator executes `AskQuestion` to solicit human decisions.
-2. **Main Chat Feedback Intake**: You can provide real-time corrections, feature requests, or performance feedback directly in the main chat. The coordinator intercepts this feedback:
-   - If it is new work or a code smell suggestion, it validates details, triages it, and natively files a GitHub issue (`gh issue create`). The sync loop then automatically registers it in the campaign queue.
-   - If it is a response to an active blocker, it updates the queue notes and resumes the orchestrator to unblock execution.
-
----
-
-## 🔄 Continuous Codebase Optimization Loop & Pareto Gating
- 
-The campaign does not just implement pre-defined requirements—it continuously discovers, gates, and schedules codebase health improvements:
- 
-- **Universal Discoveries**: During implementation and review phases, agents audit the codebase for *any* optimization worth doing (including UX/UI polish, performance gains, styling best practices, security improvements, or test coverage gaps).
-- **Strict Scope Boundaries**: To prevent scope creep, workers are blocked from implementing these discoveries in the active PR (`V-SCOPE-02`).
-- **Pareto Scoring & Gating**: For every discovery finding, agents estimate **Gain (1-10)** and **Effort (1-10)**. The orchestrator computes:
-  $$\text{Priority} = \text{Gain} \times (11 - \text{Effort})$$
-  *   **High-Value ($\ge 30$)**: Automatically filed as a new GitHub tracking issue (`gh issue create`) to grow the backlog campaign queue.
-  *   **Low-Value ($< 30$)**: Logged in `findings-ledger.json` as `status: archived` and filtered out from the active queue to keep the backlog clean and noise-free.
-- **ROI Priority Scheduling**: The orchestrator automatically sorts the active ready queue in descending order of their Priority score, ensuring high-ROI issues are implemented first.
-
-
----
-
-## 🛠 How It Works (The 5-Phase Loop)
-
-The orchestrator operates over a project-local, gitignored state directory `.blackhole/` containing:
-- `queue.json`: Active campaign DAG, issue phases, and worker execution states.
-- `findings-ledger.json`: V-code quality findings tracking Open, Fixed, or Deferred issues.
-- `plans/<issue>.md`: Touch-paths, schema baselines, and implementation designs.
-
-### The Five Lifecycle Phases
-1. **Handle**: Ingests new issues, triages dependencies, splits epics, and moves issues to planning.
-2. **Plan**: Spawns `planner` to create a plan file, defining specific Touch-Paths and API/schema baselines.
-3. **Implement**: Spawns `implementer` inside a git worktree (`wt-<issue>`) to code, run tests, and open a PR.
-4. **Review**: Spawns `reviewer` to audit the PR, then runs `scripts/review-aggregate.ts` to deduplicate and rank findings.
-5. **Loop**: Merges approved PRs, cleans up worktrees, prunes tracking branches, and proceeds to the next queue item.
+Full detail: [Adaptive Routing § Human-in-the-loop](documentation/architecture/adaptive-routing.md#human-in-the-loop).
 
 ---
 
 ## 🚀 How to Run Natively on Each Agent
 
-Depending on your preferred development tool, you can leverage native background loops, custom agents, or global commands:
-
-### 1. Claude Code (Anthropic Native)
-Claude Code natively supports long-running background sessions via the `/goal` command.
-- **How to invoke**:
-  Start Claude in your project directory and execute:
-  ```bash
-  /goal run blackhole until empty
-  ```
-  Claude will automatically load the `blackhole` skill and agents, register the `coordinator` and `orchestrator`, and run the execution loop autonomously in the background until all open issues are resolved.
-
-### 2. Cursor (Multitask Mode / Composer)
-Cursor natively supports multi-file background operations using **Composer / Multitask Mode**.
-- **How to invoke**:
-  1. Open the Cursor Composer (Cmd+I) and switch to **Agent** or **Multitask Mode**.
-  2. Run `bun run doctor` to preflight install health, config, and built artifacts.
-  3. Input the command: `@coordinator run the campaign` (or simply trigger `/blackhole`).
-  4. The `coordinator` will bootstrap the campaign and spawn the background `orchestrator` task, freeing up your composer for other work.
-
-### 3. Antigravity (Gemini) — Multitask Mode
-Antigravity has no native `/goal` command. Use the **coordinator** as the entry point:
-- **How to invoke**: `@coordinator run the campaign` (or attach the skill and start Multitask Mode with the coordinator agent).
-- The `coordinator` bootstraps the campaign and spawns the background `orchestrator`.
-
-You can also run the compiled skill directly:
-```bash
-antigravity run /blackhole
-```
-
-### 4. Codex CLI (OpenAI Native)
-Codex supports long-running background sessions via the `/goal` command (same pattern as Claude Code).
-- **How to invoke**:
-  ```bash
-  /goal run blackhole until empty
-  ```
-  Or use Multitask Mode: `@coordinator run the campaign` when you prefer coordinator-driven intake.
-
-### Platform quick reference
-
 | Platform | Invoke command |
 |----------|----------------|
 | **Claude Code** | `/goal run blackhole until empty` |
 | **Cursor** | `@coordinator run the campaign` or `/blackhole` |
-| **skills.sh** | `npx skills add CorentinLumineau/blackhole` then attach `blackhole` |
 | **Antigravity** | `@coordinator run the campaign` or `antigravity run /blackhole` |
 | **Codex CLI** | `/goal run blackhole until empty` or `@blackhole status` |
+| **skills.sh** | `npx skills add CorentinLumineau/blackhole --skill blackhole -y`, then attach `blackhole` |
 
-See [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md) for agent roster and Claude-specific triggers.
+See [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md) for the agent roster and Claude-specific
+triggers.
 
 ---
 
 ## 📦 Installation Paths
 
-### Pathway A: Cursor Native (Git Submodule)
-The cleanest, symlink-free way to install the plugin in Cursor is to add the repository directly as a git submodule named `.cursor`:
+### Cursor (git submodule)
 ```bash
 git submodule add https://github.com/CorentinLumineau/blackhole .cursor
 ```
-Cursor automatically discovers and loads the custom agents (`agents/`), rules (`rules/`), and skills (`skills/`) from the submodule!
+Cursor auto-discovers `agents/`, `rules/`, `skills/` from the submodule.
 
-### Pathway B: Claude Code Native (Marketplace)
-Register the repository as a plugin marketplace catalog and install it:
+### Claude Code (marketplace)
 ```bash
-# 1. Register the marketplace
 /plugin marketplace add https://github.com/CorentinLumineau/blackhole
-
-# 2. Install the plugin
 /plugin install blackhole@blackhole-marketplace
 ```
-The GitHub repository slug and the installed plugin id are both `blackhole`.
 
-### Pathway C: Generic / skills.sh Registry
-
-Install the skill from the skills.sh registry (repo slug + explicit skill id):
-
+### skills.sh registry
 ```bash
 npx skills add CorentinLumineau/blackhole --skill blackhole -y
 ```
+Project-scoped by default; add `-g`/`--global` for a user-level install. The repo slug and skill
+id are both `blackhole` — always pass `--skill blackhole` explicitly. Version pinning via
+`@X.Y.Z` on the repo slug is not supported by the current CLI; check out a release tag instead.
 
-After install, attach or invoke **`blackhole`** in your agent UI. Compatible agents read the root `SKILL.md` and load rules from the `references/` directory.
-
-**Naming:** The GitHub repository slug and the installable skill id are both **`blackhole`**. Always pass `--skill blackhole` — the repo slug alone does not select the skill when the repo exposes multiple skills or a non-default skill name.
-
-**Version pinning:** `CorentinLumineau/blackhole@v0.4.0` or `@0.4.0` on the repo slug is **not supported** by the current `skills` CLI (v1.5.x). The CLI treats `@…` as a skill name, not a git ref or semver tag. To pin a release, check out a release tag in a fork/submodule or re-run `skills add` after upstream publishes; do not use `@version` syntax on the repo slug.
-
-**Install scope:**
-
-| Scope | Flag | Installs to | When to use |
-|-------|------|-------------|-------------|
-| Project (default) | _(none)_ | Current repo / agent project dirs | Team-pinned install per codebase; reproducible with lockfile |
-| Global | `-g` / `--global` | User-level skill store | Personal workstation default across many repos |
-
-Examples:
-
-```bash
-# Project (default)
-npx skills add CorentinLumineau/blackhole --skill blackhole -y
-
-# Global
-npx skills add CorentinLumineau/blackhole --skill blackhole -g -y
-```
-
-### Pathway D: Antigravity / Gemini Native
-
-The distribution `plugin.json` `name` is **`blackhole`** (same plugin id as Claude and Codex). The build output directory `.agents/build/` uses the repo slug for path layout — that folder name is not the plugin id.
-
-`bun run build --gemini` compiles the Gemini/Antigravity workspace tree under `.agents/build/`.
-
-| Tree | Purpose | Contents |
-|------|---------|----------|
-| `.agents/build/` | Workspace customization (this repo or submodule) | `agents/` (5 agent prompts), `rules/`, `skills/blackhole/` |
-| `plugins/blackhole/` | Redistributable Antigravity plugin bundle | `plugin.json`, `rules/`, `skills/blackhole/` — no `agents/` (AC4: not part of the plugin schema) |
-
-Ephemeral session handoff dirs (`.agents/orchestrator/`, `.agents/worker_*/`, etc.) share the `.agents/` parent but are gitignored and separate from the tracked `build/` compile tree.
-
-**Workspace customization (agent prompts + skills):**
+### Antigravity / Gemini
 ```bash
 bun run build --gemini
 ```
-Compiles `.agents/build/agents/`, `.agents/build/rules/`, and `.agents/build/skills/blackhole/`. The `agents/` directory holds compiled agent prompts for `@coordinator` / Multitask Mode invocation; Antigravity does not require `agents/` in the official distribution bundle schema.
-
-**Global / redistributable install (Antigravity plugin schema):**
+Compiles `.agents/build/` (workspace customization — 7 agent prompts, rules, skills) and
+`plugins/blackhole/` (redistributable plugin bundle, no `agents/` per the Antigravity plugin
+schema). For a global install:
 ```bash
-bun run build --gemini
-ln -s /path/to/backlog-campaign/plugins/blackhole ~/.gemini/config/plugins/blackhole
-```
-Or copy `plugins/blackhole/` to `~/.gemini/config/plugins/blackhole/`. The global path and the source folder both use the plugin id (`blackhole`). This tree is co-located per [Antigravity plugin docs](https://antigravity.google): `plugin.json` beside `skills/` and `rules/` — it deliberately has no `agents/` directory, since `agents/` is a workspace-only convention for `@coordinator` / Multitask Mode invocation, not part of the Antigravity plugin schema.
-
-**Breaking change (v0.5+):** If you previously symlinked to `~/.gemini/config/plugins/bc-campaign` (or the older `~/.gemini/config/plugins/backlog-campaign`), remove that stale path and reinstall under `~/.gemini/config/plugins/blackhole` after upgrading.
-
-**Workspace plugin (other consumer repos):**
-```bash
-# After build, symlink or copy the distribution bundle:
-ln -s /path/to/backlog-campaign/plugins/blackhole .agents/plugins/blackhole
+ln -s /path/to/blackhole/plugins/blackhole ~/.gemini/config/plugins/blackhole
 ```
 
-For local development in this repo, prefer the full `.agents/build/` workspace tree (includes agent prompts). Use `plugins/blackhole/` when packaging or installing globally. `.gemini-plugin/plugin.json` mirrors the distribution manifest for marketplace metadata only.
-
-#### Identifiers: repo slug vs plugin id
-
-The GitHub repository slug and the plugin id are now the same string everywhere: **`blackhole`** — the GitHub repository (`CorentinLumineau/blackhole`), the skills.sh/Pathway C registry name, the Codex/Gemini `homepage`/`repository`/`websiteURL` fields, and the Claude/Codex/Gemini plugin manifests all agree, and the distribution folder name (`plugins/blackhole/`) matches too.
-
-The one place this still diverges is pre-existing local installs from before the rename:
-
-| Harness | May still reference | Reason |
-|---------|----------------------|--------|
-| Legacy global installs | `~/.gemini/config/plugins/bc-campaign`, `~/.agents/skills/backlog-campaign` | Existing symlinks from prior naming generations; `bun run doctor` may WARN |
-
-Reinstall under the Pathway matching your harness (above) to move off the old naming; see also [Migrating from bc-campaign](#migrating-from-bc-campaign).
-
-### Pathway E: Codex CLI Native
-
-Codex build outputs (`.codex-plugin/`, `codex-skills/`, `codex-agents/`, `codex-marketplace.json`) are **committed in-repo** — no local build step is required for marketplace install.
-
+### Codex CLI
+Codex outputs are committed in-repo — no local build needed to install:
 ```bash
-# 1. Register the marketplace (works on a clean git checkout)
 codex plugin marketplace add https://github.com/CorentinLumineau/blackhole
-
-# 2. Install the plugin
 codex plugin add blackhole@blackhole-codex
 ```
-
-The GitHub repository slug and the installed plugin id are both `blackhole`.
-
-**Maintainers:** after editing `src/`, run `bun run build` (Codex is included by default) and commit any changed Codex outputs. Use `bun run build --no-codex` to skip Codex when iterating on other targets only.
-
-### Migrating from bc-campaign
-
-If you have an existing `bc-campaign` (or `backlog-campaign`) install, moving to `blackhole` takes two manual steps:
-
-1. **Move the runtime state directory**: `mv .bc-campaign .blackhole` — renames your existing `config.json`, `queue.json`, `findings-ledger.json`, and `plans/` in place; no data is lost.
-2. **Reinstall the plugin under its new id**: `blackhole` replaces `bc-campaign`/`backlog-campaign` across every platform's plugin registry. Reinstall using the Pathway matching your harness above — for Antigravity/Gemini global installs, see the breaking-change note under Pathway D for the old symlink path to remove.
-
-`bun run doctor` flags stale `bc-campaign`/`backlog-campaign` paths (`D-SKILL-01`, `D-GEMINI-01`..`D-GEMINI-04`) so you can confirm the migration is complete.
+Maintainers: after editing `src/`, run `bun run build` (Codex included by default; `--no-codex`
+to skip while iterating on other targets) and commit the changed outputs.
 
 ---
 
 ## 💻 Development & Compilation
 
-To keep all rules, agent prompts, and phase playbooks DRY (Don't Repeat Yourself), all source files are maintained under `src/`. 
+All source lives under `src/` — every platform tree below it is a `bun run build` output, never
+hand-edited.
 
-We use a Bun-based compiler to build target directories:
 ```bash
-bun run build          # Cursor, Claude, skills.sh, Codex (default CI)
-bun run build --gemini # Antigravity: .agents/build/ + .agents/build/ + .gemini-plugin/
-bun run build --no-codex  # Skip Codex targets when iterating on other platforms
-bun run build --all    # All targets including Gemini
+bun run build            # Cursor, Claude, skills.sh, Codex (default CI)
+bun run build --gemini   # + Antigravity/Gemini
+bun run build --all      # everything
 bun test
-bun run verify         # Includes V-CODEX-* checks
-bun run doctor         # Campaign bootstrap preflight (before coordinator)
-bun run install:verify # Workstation install audit (Cursor/Claude/Gemini/Codex/skills.sh/symlinks)
+bun run verify           # structural + V-code checks across all built targets
+bun run doctor            # campaign bootstrap preflight
+bun run install:verify   # read-only workstation install audit (Cursor/Claude/Gemini/Codex/skills.sh)
 ```
 
-`bun run install:verify` prints a read-only platform matrix (PASS/PARTIAL/FAIL per row) covering
-Cursor, Claude, Gemini, Codex, the `skills.sh` global install, `~/.agents/skills/`, and broken
-symlinks. It never writes to disk — every check is an `fs.existsSync`/`lstatSync`/`readlinkSync`/
-`readdirSync` read. **The "Claude" row is a repo-local build-artifact proxy, not a true
-workstation-wide Claude install check**: it reports PASS when both `.claude-plugin/marketplace.json`
-and at least one `.claude/agents/*.md` are present in this repo (i.e. `bun run build` has
-produced Claude-Code-consumable output here), PARTIAL when only one is present, and FAIL when
-neither is present — there is no documented on-disk state for a `/plugin marketplace add` +
-`/plugin install` install to check against.
+| Layer | Path(s) | Role |
+|-------|---------|------|
+| Source | `src/` | Edit here — the only edit surface |
+| Build outputs | `.cursor/`, `.claude/`, `skills/`, `codex-*`, `.agents/build/`, `plugins/` | Generated — `bun run build`, never hand-edit |
+| Campaign runtime | `.blackhole/` (`queue.json`, `findings-ledger.json`, `config.json`, `plans/`) | Live state, gitignored, sole protocol SSOT |
+| Ephemeral handoff | `.agents/orchestrator/`, `.agents/worker_*/` | Per-session, gitignored, not protocol state |
 
-### Repository layout
+Full repository map and build-pipeline diagram: [documentation/architecture.md](documentation/architecture.md).
 
-| Layer | Path(s) | Role | How to change |
-|-------|---------|------|---------------|
-| **Source (authoring)** | `src/` | DRY source for agents, rules, references, playbooks | Edit `src/` directly |
-| **Build outputs** | `.cursor/`, `.claude/`, `skills/`, `codex-*`, `.agents/build/`, `.agents/build/`, etc. | Platform-specific compiled artifacts | `bun run build` — never hand-edit |
-| **Campaign runtime (protocol SSOT)** | `.blackhole/` (`queue.json`, `findings-ledger.json`, `config.json`, `plans/`) | Live campaign state; sole protocol SSOT | Mutate only per `blackhole-state.md` write protocol |
-| **Ephemeral handoff** | `.agents/orchestrator/`, `.agents/worker_*/`, `.agents/explorer_*/` | Per-session agent handoff; gitignored | Not protocol state — do not use for queue/ledger |
-
-Ephemeral handoff dirs share the `.agents/` parent with Gemini `build/` output (see [Pathway D: Antigravity / Gemini Native](#pathway-d-antigravity--gemini-native)) but are separate namespaces.
-> Full repository map (build pipeline diagram, every committed target tree, SSOT vs runtime distinctions): see [documentation/architecture.md](documentation/architecture.md).
-
-Optional: install a git pre-commit hook that runs build before commit:
-
-```bash
-bash scripts/install-hook.sh
-```
+Optional pre-commit build hook: `bash scripts/install-hook.sh`
 
 ---
 
 ## Maintainer: Creating a release
 
-**MUST** use the create-release skill workflow for every published tag `vX.Y.Z`. The CLI is implemented by [`scripts/release.ts`](scripts/release.ts) (`bun run release …`). Do not cut releases ad hoc.
-
-Every published tag must have a matching notes file at `.github/releases/vX.Y.Z.md` committed on `main` before the tag is pushed (major/minor; patch may omit per skill). CI uses that file as the GitHub release body.
+**Must** use the release skill for every published tag — see
+[`.github/skills/create-release/SKILL.md`](.github/skills/create-release/SKILL.md). The CLI is
+[`scripts/release.ts`](scripts/release.ts) (`bun run release …`); every tag needs a matching
+`.github/releases/vX.Y.Z.md` committed on `main` first.
 
 ```bash
-bun run release prepare vX.Y.Z   # scaffold notes + bump package.json
-# edit .github/releases/vX.Y.Z.md (product-focused, not internal changelog)
+bun run release prepare vX.Y.Z
+# edit .github/releases/vX.Y.Z.md
 bun run release validate vX.Y.Z
 git add -A && git commit -m "docs: add vX.Y.Z release notes" && git push origin main
 bun run release tag vX.Y.Z
 bun run release push vX.Y.Z
 ```
 
-Agent workflow: attach the maintainer skill at [`.github/skills/create-release/SKILL.md`](.github/skills/create-release/SKILL.md). Milestone closure: [`.cursor/rules/release-milestone-governance.mdc`](.cursor/rules/release-milestone-governance.mdc).
-
-**Anti-patterns (blocked):**
-
-- Manual `gh release create` without a committed `.github/releases/vX.Y.Z.md`
-- Tagging or pushing a release without `bun run release validate vX.Y.Z`
-- Retagging or force-pushing tags without explicit approval
+Blocked: manual `gh release create` without committed notes, tagging without `release validate`,
+retagging/force-pushing without explicit approval.

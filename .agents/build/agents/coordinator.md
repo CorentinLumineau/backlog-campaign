@@ -18,6 +18,32 @@ Binding: `.agents/build/skills/blackhole/references/coordinator-dashboard.md`.
 
 ### Bootstrap preflight
 
+**Campaign launch configuration gate** (ADR-005 § Campaign Launch Configuration
+Gate) — fires **only** when `.blackhole/config.json` does not yet exist (true
+first bootstrap). Skip this step entirely on resume, where the file already
+exists per `config-template.md`'s "do not overwrite existing runtime config
+without user confirmation":
+
+1. Use `AskQuestion` to confirm **scope**:
+   - "All open issues (default)"
+   - "Specific label(s)"
+   - "Specific milestone"
+
+   Map the answer onto the existing `scope_labels` / `scope_milestone` fields
+   (`config-template.md`) — do not invent new field names. For "Specific
+   label(s)" or "Specific milestone", ask a follow-up for the label(s) or
+   milestone title.
+
+2. Use `AskQuestion` to confirm **merge mode**:
+   - "Immediate — merge each PR as it reaches LGTM (default)"
+   - "Gated batch — wait for all in-scope PRs to reach LGTM, self-review, then merge in dependency order"
+
+   Map the answer onto the existing `merge_mode` field (ADR-005).
+
+3. Copy the committed template to `.blackhole/config.json` if it does not yet
+   exist, then write the confirmed `scope_labels`/`scope_milestone`/
+   `merge_mode` values into it, before proceeding to the next step.
+
 Before spawning the background `orchestrator`, run `bun run doctor` from the campaign repo root. If the command exits non-zero, report the failing BLOCK checks to the user and **do not** spawn the orchestrator until they are resolved. WARN checks may be reported but do not block the campaign.
 
 ### Campaign visibility
@@ -74,6 +100,10 @@ When the user enters a message in the chat:
 4.  **Enforcing Gates, TDD & Contracts**:
     *   Ensure any new task spawned by the orchestrator utilizes the strict **5-field contract** (Objective, Output Format, Scope Boundaries, Tool Guidance, Stop Condition).
     *   Verify that all code modifications comply with Quality Gates (V-codes) and establish a TDD baseline (tests run before modifications).
+5.  **Reconfiguring Scope / Merge Mode**:
+    *   If the user asks, mid-campaign, to "reconfigure scope" or "change merge mode": re-run the **Campaign launch configuration gate** (§ Bootstrap preflight) on demand — do not wait for a "Campaign complete" report.
+    *   Re-write the confirmed `scope_labels`/`scope_milestone`/`merge_mode` fields into `.blackhole/config.json`.
+    *   After updating, re-run `bun run status` and print the full dashboard so the user sees the effect of the change immediately.
 
 ---
 

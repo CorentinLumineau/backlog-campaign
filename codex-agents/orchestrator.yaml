@@ -176,6 +176,8 @@ instructions: |
 
   Per `queue-dag.md` Step 4: compute execution waves via topological sort on `depends_on` before batch selection. Log `WAVE <N>` before spawning workers.
 
+  Per `merge-gate.md` § 1: before merging an LGTM'd issue's PR, evaluate `mergeEligible(issue)` — hold/merge_after/gated-batch checks, never duplicated inline here.
+
   ---
 
   ## Checkpoint protocol

@@ -116,6 +116,13 @@ the issue body is synced. Skip write-back when `auto_sync: false` (offline — q
 **Preserve** `in-flight` entries — do not demote to `ready` while worker active
 unless forge shows issue closed.
 
+### 5.5 Merge-hold drift reconciliation
+
+For each issue with `merge_hold: true` or an unresolved `merge_after` entry, run
+`gh pr view --json state,mergedAt` on its linked PR per `merge-gate.md` § 3 — do not
+duplicate the reconciliation algorithm here. On an externally-merged-while-held
+detection, log `V-MERGE-02` (WARN) to `findings-ledger.json`.
+
 ### 6. Parse dependencies from issue body
 
 Patterns (case-insensitive):
@@ -167,6 +174,12 @@ Helper exports: `parseDependsFromBody(body)`, `mergeDependsIntoBody(body, depend
 
 **Round-trip acceptance:** body → sync → queue `depends_on` mutation → write-back →
 re-sync preserves `depends_on`.
+
+### 6.6 Cross-graph cycle detection
+
+Check the union of `merge_after` and `depends_on` edges for cycles per `merge-gate.md`
+§ 2 — do not duplicate the detection algorithm here. On a cycle, set both issues
+`status: blocked` with note `merge-order cycle with #N`.
 
 ### 7. PR cross-reference
 

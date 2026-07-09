@@ -19,7 +19,8 @@ Committed template: `.blackhole/config.json`
   "auto_sync": true,
   "adaptive_routing": true,
   "router_confidence_thresholds": { "split": 70, "design": 70, "plan_mode": 70, "security": 70 },
-  "entry_mode": "multitask"
+  "entry_mode": "multitask",
+  "merge_mode": "immediate"
 }
 ```
 
@@ -39,6 +40,7 @@ Committed template: `.blackhole/config.json`
 | `adaptive_routing` | no | Emergency kill switch for ADR-004 router-agent routing (default `true`); when `false`, routing is inert regardless of `route` presence in `queue.json` |
 | `router_confidence_thresholds` | no | Per-flag confidence thresholds keyed by `split`, `design`, `plan_mode`, `security` (matches `route.confidence` keys); each defaults to `70` when absent |
 | `entry_mode` | no | `multitask` (default) — coordinator + orchestrator; `direct` = legacy single session |
+| `merge_mode` | no | `immediate` (default) or `gated-batch` (ADR-005); preserves current behavior exactly when absent/default — each PR merges as soon as it reaches LGTM. `gated-batch` waits for all in-scope PRs (per `scope_milestone`/`scope_labels`) to reach LGTM, then merges one PR at a time in `merge_after` dependency order; see `merge-gate.md` |
 
 **Scope filter composition** (both fields optional — unset means no filter on that axis):
 

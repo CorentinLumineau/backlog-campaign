@@ -30,10 +30,27 @@ Every worker subagent prompt you write MUST explicitly declare these 5 fields:
 
 ### Worker spawn model
 
-`Task` / subagent spawns for `planner`, `implementer`, and `reviewer`
-inherit the **parent orchestrator session's harness default model**. Do **not**
-pass or force a `model` override derived from agent markdown files — plugin
-agents omit `model:` by design so the workstation/session preference applies.
+Read `.blackhole/config.json` → `worker_model_policy` (default `cost-optimized` when absent;
+full matrix: `.claude/skills/blackhole/references/model-routing.md`).
+
+`Task` / subagent spawns must align **model cost to task**, not use one tier for every role:
+
+| Policy | Spawn behavior |
+|--------|----------------|
+| `cost-optimized` | Resolve per spawn: `economy` / `standard` / `premium` from role + track + `route{}` signals, then pass the **cheapest capable** harness slug for that tier. |
+| `inherit` | Omit `model` — workers inherit the parent session's harness default (v0.6.1 behavior). |
+
+**Task-tier examples (cost-optimized):**
+
+| Spawn | Typical tier |
+|-------|----------------|
+| `router`, `investigator` (investigate), `planner` skip | `economy` |
+| `planner` quick/standard, `reviewer`, `orchestrator`, `implementer` (default) | `standard` |
+| `planner` design, `implementer` + security/`size:xl`, `reviewer` at high `review_iteration` | `premium` |
+
+Do **not** read `model:` from agent markdown frontmatter (`V-AGENT-01`). On
+`escalation_trigger` blocked returns, bump one tier on the next respawn for that role (cap
+`premium`).
 
 ### Route-derived dispatch (ADR-004 step 3)
 
@@ -175,6 +192,42 @@ Track `review_iteration` on queue entries. Increment after each `changes_request
 
 Per `queue-dag.md` Step 4: compute execution waves via topological sort on `depends_on` before batch selection. Log `WAVE <N>` before spawning workers.
 
+**One turn per batch** means one orchestrator turn **includes** the barrier wait for that batch — not spawn-and-exit. Do not end the turn after logging `WAVE <N>` until the batch barrier clears.
+
+---
+
+## Background worker barrier (Cursor / Pattern B)
+
+When this turn spawns one or more workers with `run_in_background: true` (router wave,
+parallel planners, implementers, reviewers):
+
+### Spawn
+
+1. Log `WAVE <N>: issues [...]` before the first spawn.
+2. Record each worker in `campaign-checkpoint.md` `## In-flight workers` with role, issue `#N`, and spawn turn id.
+
+### Barrier
+
+Block **in-turn** until every worker in the batch completes. On Cursor, use `Await` on
+each background task ID (canonical harness pattern). Do **not** end the turn and wait for
+notifications — Cursor does not deliver worker-completion notifications to a parent
+orchestrator that has already ended its turn.
+
+### Triage (idempotent)
+
+For each completed worker:
+
+1. Parse and validate return JSON (`scripts/validate-worker-json.ts` or harness hook output) — see `worker-schemas.md` § Orchestrator validation and § Barrier triage.
+2. Apply queue/ledger mutations per role (router → `route{}`; planner → plan gate; implementer → PR linkage; reviewer → aggregate pipeline).
+3. Remove the worker from `## In-flight workers`.
+4. **Idempotency:** if the artifact already satisfies the gate before spawn (e.g. `route{}` present, plan file on disk, PR open), skip re-spawn and advance phase. When checkpoint lists workers as active but artifacts already landed, run `recovery-protocol.md` §9 drift heal at turn start (`detectArtifactDrift`) — do not re-spawn completed workers when artifacts match the current revision.
+
+### Turn-end gate
+
+Run the **Checkpoint protocol** turn-end checklist only when `## In-flight workers` is
+empty. If any worker is still in-flight, **do not** increment `orchestrator_turn_id` or
+end the turn.
+
 Per `merge-gate.md` § 1: before merging an LGTM'd issue's PR, evaluate `mergeEligible(issue)` — hold/merge_after/gated-batch checks, never duplicated inline here.
 
 ---
@@ -196,9 +249,21 @@ Template, write order, and compaction recovery: `checkpoint-protocol.md`.
 
 ## Session resume & recovery
 
-On compaction recovery, after reading checkpoint, inspect worktrees per `recovery-protocol.md` §2.
+On **every orchestrator turn start** (including compaction recovery and session resume),
+after reading checkpoint and forge sync:
 
-**MUST** complete `recovery-protocol.md` §5 orchestrator checklist before spawning `implementer` when any in-flight issue has a dirty worktree or recovery stash. Do not spawn implementer until worktree scope matches a single issue.
+1. Run `recovery-protocol.md` **§9** artifact-vs-queue drift heal for all
+   `status: in-flight` issues — **before** Wave scheduling and **before** any `Task` spawn.
+   Use `scripts/recovery-drift.ts` (`detectArtifactDrift`) to detect drift; apply heal
+   mutations (clear stale notes/checkpoint rows, advance phase) before spawning workers.
+2. Cross-link **§8** (staleness) and **§9** (drift): staleness forces re-route when
+   `route.body_hash` no longer matches; drift advances without re-run when artifacts match
+   the current revision and are not stale.
+3. Inspect worktrees per `recovery-protocol.md` §2.
+
+**MUST** complete `recovery-protocol.md` §5 orchestrator checklist before spawning
+`implementer` when any in-flight issue has a dirty worktree or recovery stash. Do not spawn
+implementer until worktree scope matches a single issue.
 
 ---
 

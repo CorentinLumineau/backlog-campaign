@@ -30,10 +30,27 @@ Every worker subagent prompt you write MUST explicitly declare these 5 fields:
 
 ### Worker spawn model
 
-`Task` / subagent spawns for `planner`, `implementer`, and `reviewer`
-inherit the **parent orchestrator session's harness default model**. Do **not**
-pass or force a `model` override derived from agent markdown files — plugin
-agents omit `model:` by design so the workstation/session preference applies.
+Read `.blackhole/config.json` → `worker_model_policy` (default `cost-optimized` when absent;
+full matrix: `{{AGENT_DIR}}/skills/blackhole/references/model-routing.md`).
+
+`Task` / subagent spawns must align **model cost to task**, not use one tier for every role:
+
+| Policy | Spawn behavior |
+|--------|----------------|
+| `cost-optimized` | Resolve per spawn: `economy` / `standard` / `premium` from role + track + `route{}` signals, then pass the **cheapest capable** harness slug for that tier. |
+| `inherit` | Omit `model` — workers inherit the parent session's harness default (v0.6.1 behavior). |
+
+**Task-tier examples (cost-optimized):**
+
+| Spawn | Typical tier |
+|-------|----------------|
+| `router`, `investigator` (investigate), `planner` skip | `economy` |
+| `planner` quick/standard, `reviewer`, `orchestrator`, `implementer` (default) | `standard` |
+| `planner` design, `implementer` + security/`size:xl`, `reviewer` at high `review_iteration` | `premium` |
+
+Do **not** read `model:` from agent markdown frontmatter (`V-AGENT-01`). On
+`escalation_trigger` blocked returns, bump one tier on the next respawn for that role (cap
+`premium`).
 
 ### Route-derived dispatch (ADR-004 step 3)
 

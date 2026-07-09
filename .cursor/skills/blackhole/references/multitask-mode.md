@@ -36,7 +36,7 @@ do not use built-in `subagent_type` enums as a stand-in.
 
 | DO | DON'T |
 |----|-------|
-| `Task` + attach `.cursor/agents/bc-<agent>.md` + `run_in_background: true` + role-appropriate prompt | `subagent_type: generalPurpose` (or any built-in enum) instead of a bc-* agent file |
+| `Task` + attach `.cursor/agents/bc-<agent>.md` + `run_in_background: true` + role-appropriate prompt + per-task `model` when `worker_model_policy: cost-optimized` | `subagent_type: generalPurpose` (or any built-in enum) instead of a bc-* agent file |
 
 | Role | Agent file |
 |------|------------|
@@ -44,7 +44,7 @@ do not use built-in `subagent_type` enums as a stand-in.
 | Orchestrator (background) | `.cursor/agents/orchestrator.md` |
 | Workers | `.cursor/agents/planner.md`, `.cursor/agents/implementer.md`, `.cursor/agents/reviewer.md` |
 
-Spawn prompt text and mis-spawn hazard detail: `campaign-prompt.md` § Coordinator usage.
+Spawn prompt text, model policy, and mis-spawn hazard detail: `campaign-prompt.md` § Coordinator usage; `model-routing.md`.
 
 ## Coordinator MUST NOT
 

@@ -18,6 +18,24 @@ Field rules) and `config.json`'s `merge_mode` field (see `config-template.md`).
 Reuses `scripts/forge-scope.ts` (`readScope`, `issueMatchesScope`) for gated-batch
 scope — does not reimplement it (V-INT-02).
 
+## 0. CI-wait poller contract
+
+Specification only — no merge mechanics live here (this doc's own charter,
+above): the poll/retry/rerun mechanics themselves are `phase-loop.md` § Merge
+protocol step 2's, unchanged.
+
+- **Interval**: poll `gh pr checks <n>` every 60s while the background CI-wait
+  is outstanding.
+- **Cap**: 20 minutes of total CI-wait per PR before the 2-retry/reclassify
+  path in `phase-loop.md` step 2 takes over. Chosen to sit above the
+  `V-PARETO-01` foreground->10 min threshold (this is a background wait, not a
+  foreground one) and well under the 40-45 min foreground waits this issue's
+  mining evidence flagged as excessive.
+- **Reclassification**: governed entirely by `phase-loop.md` step 2's rules
+  (`cancelled` → rerun once; "Base branch was modified" → re-fetch + retry
+  once; 2-retry cap → `orchestrator.md` § Error Classification) — not
+  restated here.
+
 ## 1. `mergeEligible(issue) -> bool`
 
 ```

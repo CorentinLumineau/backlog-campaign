@@ -44,7 +44,31 @@
    next turn). This step is binding wherever this section is cited or
    delegated — never skip it to reach step 1 directly.
 1. `gh pr view <n> --json headRefOid` equals local HEAD
-2. `gh pr checks <n>` green (except Vercel preview — expected fail)
+2. CI-wait: a detached background poll, never a foreground agent sleep. `gh pr
+   checks <n>` must reach green (except Vercel preview — expected fail), but
+   the orchestrator does not block the turn on it synchronously
+   (`V-PARETO-01` — no LLM turn sleeping >10 min in a foreground poll loop).
+   Spawn the check as a background-executed command per harness — Bash
+   `run_in_background: true` + notification (Claude Code), background `Task`
+   + `Await` on the task id (Cursor), or the equivalent detached-poll
+   primitive on other harnesses — and use the same **Background worker
+   barrier** idiom already documented in `orchestrator.md` (§ Background
+   worker barrier) to resume steps 3-5 once the CI-green signal lands,
+   instead of ending the turn and chat-polling. Poll interval/cap are
+   specified in `merge-gate.md` § 0 (this section owns only the mechanics
+   below, not the contract numbers).
+   1. **`cancelled` conclusion with no real error**: if `gh pr checks <n>`
+      (or `get_failing_step_logs`/`gh run view --log-failed`) shows a run
+      concluding `cancelled` with no corresponding failing-step error, run
+      `gh run rerun <run-id>` once (`&&`-chained per this file's existing gh
+      convention) and resume the poll.
+   2. **"Base branch was modified"**: if `gh pr checks <n>` /
+      `mergeStateStatus` reports the PR's base was modified mid-watch,
+      re-fetch `target_branch` and retry the check once.
+   3. **2-retry cap**: if either rule's single retry does not resolve to a
+      clean green/red CI result, reclassify per `orchestrator.md` § Error
+      Classification (Transient → Permanent path) — do not restate that
+      table here.
 3. Run the project's build command in main clone (if applicable)
 4. `gh pr merge --squash` (use `&&` only, never `;`) — immediately after this
    command succeeds, in the **same** atomic `queue.json` write that sets

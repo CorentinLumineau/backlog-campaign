@@ -181,6 +181,7 @@ When `status: blocked`, `failing_checks` lists failed items:
   "tests_passed": true,
   "touch_paths_honored": true,
   "execution_mode": "standard",
+  "evidence": { "command": "bun test scripts/campaign-status.test.ts", "result": "42 pass, 0 fail" },
   "new_findings": [],
   "filed_issues": []
 }
@@ -196,6 +197,7 @@ When `status: blocked`, `failing_checks` lists failed items:
 | `execution_mode` | `standard` \| `refactor-strict` \| `docs-only` | no, optional — absent defaults to `standard` |
 | `task_type` | `feature` \| `bugfix` \| `refactor` \| `docs` | no, optional |
 | `escalation_trigger` | `failed_attempts` \| `touch_paths_overrun` | no, optional — only meaningful on `status: blocked` |
+| `evidence` | object `{ command: string, result: string }` | yes when `status: complete`; absent when `blocked`/`error` |
 | `new_findings` | finding[] | no |
 | `filed_issues` | number[] | no |
 
@@ -243,6 +245,19 @@ of a blind `implementer` re-spawn.
 
 See `implementer.md` § Bugfix Gate for the Scout Check / Improvement Record convention the same
 gate also produces (content spec stays there — `V-DRY`).
+
+### `evidence` (required for `status: complete` — ADR: verification-evidence gate, issue #204)
+
+Object `{ command: string, result: string }` produced by `implementer.md` § Verification
+Evidence Gate's RUN/READ/VERIFY steps: `command` is the primary verification command actually
+executed (test suite, or lint+test combined for a Quick-track doc change); `result` is the
+verbatim last/summary result line of that command's output — not a paraphrase.
+
+**Non-goal for this issue**: `scripts/validate-worker-json.ts` does not yet structurally
+enforce this field's presence or shape, and no fixture under `fixtures/worker-json/`
+exercises it — both are out of this issue's declared Touch-Paths. Wiring structural
+enforcement (a `verify.evidence-gate.test.ts` content-assertion check plus a fixture update)
+is recommended as a follow-up issue.
 
 ## Reviewer (`reviewer`)
 

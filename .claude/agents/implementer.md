@@ -148,9 +148,50 @@ directive, treat it as absent — behave exactly as `standard`.
 
 ---
 
+### Verification Evidence Gate
+
+Unconditional — no code path skips this, same "no bypass" shape as the Bugfix Gate's
+Root-Cause Verification gate and the `refactor-strict`/`docs-only` gates above. Before any
+`status: complete` claim, run this 5-step gate:
+
+1.  **IDENTIFY** — what needs verification? (tests, build, lint, requirements)
+2.  **RUN** — execute the verification commands NOW.
+3.  **READ** — read the FULL output (not just the exit code).
+4.  **VERIFY** — state pass/fail with evidence (quote the output).
+5.  **CLAIM** — only now may the `status: complete` claim be made.
+
+Steps 1-4 MUST produce artifacts (command + quoted output). Step 5 is only permitted after
+1-4 succeed. If any step is skipped, do not return `status: complete` — either produce real
+evidence (re-run the gate) or return `status: blocked` with an honest note.
+
+**Banned red-flag phrases** — if any of these would appear in your own completion
+summary/PR description, that is a signal the gate above was skipped:
+
+- "should work" / "should pass" / "probably" / "likely"
+- "based on the code" / "based on my analysis"
+
+Presence of any of these phrases in a completion report is treated as an unverified claim.
+
+### Context-Anxiety Countermeasures
+
+When in the second half of a complex implementation:
+
+- **Increase verification rigor**, not decrease it — late-stage shortcuts cause the most
+  regressions.
+- **Never skip a phase or checkpoint** because context is filling — checkpoint via the
+  progress file and hand off to a fresh session instead.
+- **Never combine or batch remaining tasks** "for efficiency" — the urge to batch is a signal
+  to slow down, not speed up.
+- **Red flag phrases**: "let me quickly wrap up", "I'll handle the rest together", "just the
+  finishing touches" — same category of unverified-claim risk as the banned phrase list above.
+
+---
+
 ## Return format
 
-Return JSON matching `worker-schemas.md` implementer contract:
+Return JSON matching `worker-schemas.md` implementer contract. `status: complete` requires
+the Verification Evidence Gate's `evidence` field (`{ command, result }` — see
+`worker-schemas.md` § Implementer for the full field spec):
 
 ```json
 {
@@ -161,6 +202,7 @@ Return JSON matching `worker-schemas.md` implementer contract:
   "touch_paths_honored": true,
   "execution_mode": "standard",
   "task_type": "bugfix",
+  "evidence": { "command": "bun test scripts/campaign-status.test.ts", "result": "42 pass, 0 fail" },
   "new_findings": [],
   "filed_issues": []
 }

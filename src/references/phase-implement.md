@@ -72,6 +72,15 @@ See [worker-schemas.md](worker-schemas.md) implementer contract. Orchestrator ap
 ending turn. For each new finding concerning improvements, best practices, UX/UI, performance, or coverage, the orchestrator files a new GitHub tracking issue (`gh issue create`) to schedule it in the backlog campaign queue.
 See [multitask-mode.md](multitask-mode.md) § Claude Code harness notes for how to verify a spawned worker's completion without chat polling.
 
+**Unverified-claim hold (issue #204)**: the orchestrator treats a worker completion report
+(PR description, JSON `summary`, or any inline text) containing a red-flag phrase from
+`implementer.md`'s Verification Evidence Gate list, or a `status: complete` submission with
+`evidence` absent/empty, as an **unverified claim** — hold the issue at `phase: implement`,
+do not advance to `phase: review`, and do not append the worker's `new_findings` until the
+implementer re-submits with fresh, quoted evidence. Documentation-level obligation only — no
+code enforcement lands in this issue (`scripts/validate-worker-json.ts` and the orchestrator
+dispatch logic are out of Touch-Paths).
+
 
 ## Quality gate (pre-PR)
 

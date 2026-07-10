@@ -101,7 +101,7 @@ describe('validatePluginTreeShape', () => {
       populateFixtureTree(destRoot);
       const refsDir = path.join(destRoot, 'skills', 'blackhole', 'references');
       const subDir = path.join(refsDir, 'hunt');
-      fs.mkdirSync(subDir);
+      fs.mkdirSync(subDir, { recursive: true });
       fs.writeFileSync(path.join(subDir, 'nested.md'), '# nested\n', 'utf-8');
       expect(() => {
         for (const f of fs.readdirSync(refsDir)) fs.rmSync(path.join(refsDir, f), { recursive: true, force: true });

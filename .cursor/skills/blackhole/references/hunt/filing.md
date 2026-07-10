@@ -45,7 +45,7 @@ floor.
 
 ## Scoring — V-PARETO-02 SSOT
 
-`Priority = Gain × (11 − Effort)`; a finding must score `>= 30` to be filed as an issue, and
+`Priority = Gain * (11 - Effort)`; a finding must score `>= 30` to be filed as an issue, and
 ready issues are sorted by Priority descending (`src/references/blackhole-vcodes.md`,
 `V-PARETO-02`). This is the **only** scoring formula used by any hunt kind that files
 through this template — no alternate or per-kind formula is introduced (ADR-006 § Scoring

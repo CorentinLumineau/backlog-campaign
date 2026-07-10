@@ -58,7 +58,7 @@ independently audits... scores recorded in ledger rows for human spot-audit").
 
 ## Scoring — V-PARETO-02 SSOT
 
-`Priority = Gain × (11 − Effort)`; a finding must score `>= 30` to be filed as an issue, and
+`Priority = Gain * (11 - Effort)`; a finding must score `>= 30` to be filed as an issue, and
 ready issues are sorted by Priority descending (`src/references/blackhole-vcodes.md`,
 `V-PARETO-02`). This is the **only** scoring formula for the `best-practices` kind — no
 alternate or per-kind formula is introduced, and the per-principle wave-note percentages

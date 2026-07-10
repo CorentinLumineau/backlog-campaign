@@ -43,7 +43,7 @@ four concerns scores toward the top of the "files >300 lines" gain range, not th
 
 ## Scoring — V-PARETO-02 SSOT
 
-`Priority = Gain × (11 − Effort)`; a finding must score `>= 30` to be filed as an issue, and
+`Priority = Gain * (11 - Effort)`; a finding must score `>= 30` to be filed as an issue, and
 ready issues are sorted by Priority descending (`src/references/blackhole-vcodes.md`,
 `V-PARETO-02`). This is the **only** scoring formula for the `quickwins` kind — no alternate
 or per-kind formula is introduced. The calibration table above anchors this kind's

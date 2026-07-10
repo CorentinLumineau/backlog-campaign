@@ -9,6 +9,8 @@ export type Finding = {
   issue_ref?: string;
   gain?: number;
   effort?: number;
+  confidence?: number;
+  locations?: { file: string; line: number }[];
 };
 
 export type ReviewerInput = {
@@ -52,6 +54,32 @@ function stampIssueRef(findings: Finding[], issueRef: string): Finding[] {
     ...finding,
     issue_ref: finding.issue_ref ?? issueRef,
   }));
+}
+
+const LOW_CONFIDENCE_CAVEAT = '[low-confidence finding: verify before acting — confidence 50-80]';
+
+/**
+ * Confidence-band gate (AC1): findings with `confidence < 50` are dropped
+ * entirely; `confidence` in `[50, 80)` survive but are downgraded from
+ * `BLOCK` to `WARN` (never BLOCK in this band) and carry an explicit
+ * caveat in `summary`; `confidence >= 80` (or absent, i.e. full confidence)
+ * pass through unchanged. Mirrors `reviewer.md` §11's behavioral policy as
+ * the deterministic backstop.
+ */
+export function applyConfidenceGate(findings: Finding[]): Finding[] {
+  return findings
+    .filter((finding) => finding.confidence === undefined || finding.confidence >= 50)
+    .map((finding) => {
+      if (finding.confidence === undefined || finding.confidence >= 80) {
+        return finding;
+      }
+
+      return {
+        ...finding,
+        severity: finding.severity === 'BLOCK' ? 'WARN' : finding.severity,
+        summary: `${finding.summary} ${LOW_CONFIDENCE_CAVEAT}`,
+      };
+    });
 }
 
 export function dedupeFindings(findings: Finding[]): Finding[] {
@@ -127,7 +155,8 @@ export function aggregateReview(input: {
 
   const stamped = stampIssueRef(input.reviewer.findings, input.issueRef);
   const prior = input.priorFindings ?? [];
-  const deduped = dedupeFindings([...prior, ...stamped]);
+  const gated = applyConfidenceGate([...prior, ...stamped]);
+  const deduped = dedupeFindings(gated);
   const findings = sortFindings(deduped);
   const blockers_count = findings.filter((f) => f.severity === 'BLOCK').length;
   const lgtm = input.reviewer.status === 'complete' && blockers_count === 0;

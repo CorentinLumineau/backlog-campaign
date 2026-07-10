@@ -16,20 +16,19 @@ related:
 **Dogfood** (same pattern as the ADR-004 campaign): blackhole's own campaign implements
 ADR-006. The 7 implementation steps are filed as forge issues with dependency links; the
 campaign processes them through the adaptive pipeline. One PR per issue; `bun run build &&
-bun run verify` green is an acceptance criterion on every issue. Issue numbers are assigned
-at filing time (campaign launch); the DAG below uses step IDs.
+bun run verify` green is an acceptance criterion on every issue. Filed as issues #197–#203 (2026-07-10); the DAG below maps step IDs to issue numbers.
 
 ## Issue DAG
 
 ```mermaid
 flowchart LR
-    K1["K1 schema + config<br/>kaizen block, ledger phase:hunt,<br/>hunt_state, hunter contract,<br/>V-HUNT-01/02 (size:s, P0)"]
-    K2["K2 hunt kind refs<br/>quickwins + best-practices +<br/>coverage + filing template<br/>(size:m, P0)"]
-    K3["K3 HUNTER AGENT<br/>+ build.ts + ground-truth<br/>+ model-routing (size:m, P1)"]
-    K4["K4 orchestrator dispatch<br/>SKILL hunt mode, triggers,<br/>filing/dedup/watermark,<br/>campaign-complete (size:m, P1)"]
-    K5["K5 LAUNCH FORM<br/>coordinator gate: issue preview,<br/>merge_mode leave-open, merge_after,<br/>parallelism + kaizen (size:m, P1)"]
-    K6["K6 refactor + bug kinds<br/>blast-radius effort, severity floor,<br/>design-track disposition e2e<br/>(size:s, P2)"]
-    K7["K7 protocol docs + audit<br/>blackhole-protocol hunt section,<br/>F-code, dashboard row (size:s, P2)"]
+    K1["#197 schema + config<br/>kaizen block, ledger phase:hunt,<br/>hunt_state, hunter contract,<br/>V-HUNT-01/02 (size:s, P0)"]
+    K2["#198 hunt kind refs<br/>quickwins + best-practices +<br/>coverage + filing template<br/>(size:m, P0)"]
+    K3["#199 HUNTER AGENT<br/>+ build.ts + ground-truth<br/>+ model-routing (size:m, P1)"]
+    K4["#200 orchestrator dispatch<br/>SKILL hunt mode, triggers,<br/>filing/dedup/watermark,<br/>campaign-complete (size:m, P1)"]
+    K5["#201 LAUNCH FORM<br/>coordinator gate: issue preview,<br/>merge_mode leave-open, merge_after,<br/>parallelism + kaizen (size:m, P1)"]
+    K6["#202 refactor + bug kinds<br/>blast-radius effort, severity floor,<br/>design-track disposition e2e<br/>(size:s, P2)"]
+    K7["#203 protocol docs + audit<br/>blackhole-protocol hunt section,<br/>F-code, dashboard row (size:s, P2)"]
     K1 --> K2 --> K3 --> K4
     K1 --> K3
     K1 --> K5
@@ -38,10 +37,10 @@ flowchart LR
     K5 --> K7
 ```
 
-Parallelizable waves (respecting `parallel_max`): **W1** K1 → **W2** K2, K5 → **W3** K3 →
-**W4** K4 → **W5** K6, K7.
+Parallelizable waves (respecting `parallel_max`): **W1** #197 → **W2** #198, #201 → **W3** #199 →
+**W4** #200 → **W5** #202, #203.
 
-K5 depends only on K1 (the `kaizen` config fields it asks about) and touches
+K5 (#201) depends only on K1 (#197) (the `kaizen` config fields it asks about) and touches
 `coordinator.md` + `config-template.md` + `phase-loop.md`'s merge protocol — it
 parallelizes with the hunter-side work.
 

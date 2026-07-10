@@ -98,6 +98,19 @@ already does:
    invent new field names or redefine defaults beyond what
    `config-template.md` already documents.
 
+   Before accepting the answer, print a cheap, local-only live preview of
+   what the confirmed `kaizen` block would target — no new forge (`gh`) call,
+   both inputs are already-loaded local state: enabled `kaizen.kinds`
+   (gated by `kaizen.enabled`); `kaizen.trigger` plus `kaizen.loop_interval`
+   only when `trigger: every-n-loops`; and the three caps
+   `kaizen.min_priority`, `kaizen.max_issues_per_wave`, `kaizen.max_waves`.
+   Then, only when `.blackhole/findings-ledger.json` already has a
+   `hunt_state` object (it is absent until the first hunt wave ever runs —
+   skip this part entirely when absent), append a per-kind territory/waves
+   summary read directly from `hunt_state.kinds.<kind>`: bands scanned
+   (`bands_done.length`), waves consumed vs. cap (`waves` / `kaizen.max_waves`),
+   and `exhausted` status.
+
 6. Copy the committed template to `.blackhole/config.json` if it does not yet
    exist, then write the confirmed `scope_labels`/`scope_milestone`/
    `merge_mode`/`parallel_max`/`kaizen` values (and any adjusted `merge_after`

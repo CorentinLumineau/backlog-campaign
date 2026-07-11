@@ -40,6 +40,12 @@ The status script emits markdown with:
 7. **Issues filed** — ledger rows with `deferred_to_issue` (discovery filings)
 8. **Ledger open** — top open V-code findings
 9. **Active workers** — from checkpoint `## In-flight workers` section
+10. **Hunt** — waves run per kind (`hunt_state.kinds.<kind>.waves` vs. `kaizen.max_waves`);
+    issues filed vs. archived this campaign (ledger `phase: hunt` rows: `deferred_to_issue`
+    set = filed, `status: archived` = archived); territory coverage per kind
+    (`bands_done` count, or `exhausted: true`/`false` when no bounded total is known).
+    Omitted entirely when the `kaizen` block is absent or `enabled: false` (same
+    convention as every other kaizen-gated feature).
 
 ## Coordinator turn flow (with visibility)
 

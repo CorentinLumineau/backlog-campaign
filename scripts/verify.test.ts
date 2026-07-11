@@ -91,6 +91,22 @@ describe('isAgentCountError (V-CODEX-04 filter — #234)', () => {
 });
 
 describe('findHarnessTokenLeaks (V-HARNESS-01 — #245)', () => {
+  test('fail-closed: appendix marker absent treats the whole file as core — a stray token anywhere fails', () => {
+    const content = [
+      '# Claude Code-Native Orchestration (Pattern C)',
+      '',
+      '## Capability matrix (core — harness-neutral)',
+      '',
+      '| C1 | A fan-out mechanism with wave barriers |',
+      '',
+      'Some later prose that mentions the `Workflow tool` without any appendix marker present.',
+    ].join('\n');
+
+    const leaks = findHarnessTokenLeaks(content);
+    expect(leaks.length).toBe(1);
+    expect(leaks[0]).toContain('Workflow tool');
+  });
+
   test('returns [] for a clean harness-neutral core with tokens confined to the appendix', () => {
     const content = [
       '# Claude Code-Native Orchestration (Pattern C)',

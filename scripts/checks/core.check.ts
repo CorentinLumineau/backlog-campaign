@@ -21,7 +21,7 @@ export type CheckResult = { id: string; ok: boolean; detail?: string };
 
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf-8');
 
-const listFiles = (dir: string, ext = '.md'): string[] => {
+export const listFiles = (dir: string, ext = '.md'): string[] => {
   const full = path.join(root, dir);
   if (!fs.existsSync(full)) return [];
   return fs.readdirSync(full).filter((f) => f.endsWith(ext));
@@ -353,7 +353,7 @@ const checkPlanArtifacts = (): CheckResult => {
 export const walkMdFilesAbs = (absDir: string): string[] =>
   walkFilesAbs(absDir).filter((f) => f.endsWith('.md'));
 
-const walkMdFiles = (dir: string): string[] =>
+export const walkMdFiles = (dir: string): string[] =>
   walkMdFilesAbs(path.join(root, dir)).map((f) => path.relative(root, f));
 
 // V-LINK-01 (ADR-007 T4/R7): markdown cross-reference integrity.

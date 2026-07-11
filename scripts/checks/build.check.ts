@@ -10,8 +10,7 @@ import {
   RULES_LIST,
 } from '../build.ts';
 import { validatePluginTreeShape, distributionTreeErrors, codexTreeErrors, hasInstructionsBlock } from '../tree-shape.ts';
-import { walkFilesAbs } from '../lib/fs.ts';
-import { isAgentCountError } from './core.check.ts';
+import { isAgentCountError, listFiles, walkMdFilesAbs, walkMdFiles } from './core.check.ts';
 
 // ADR-007 T5/R2' — build.check.ts: everything gated behind `bun run build --gemini`
 // (Gemini/Antigravity workspace + distribution bundle + Codex CLI compile outputs) — matches
@@ -23,16 +22,6 @@ export type CheckResult = { id: string; ok: boolean; detail?: string };
 
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf-8');
 
-const listFiles = (dir: string, ext = '.md'): string[] => {
-  const full = path.join(root, dir);
-  if (!fs.existsSync(full)) return [];
-  return fs.readdirSync(full).filter((f) => f.endsWith(ext));
-};
-
-const walkMdFilesAbs = (absDir: string): string[] => walkFilesAbs(absDir).filter((f) => f.endsWith('.md'));
-
-const walkMdFiles = (dir: string): string[] =>
-  walkMdFilesAbs(path.join(root, dir)).map((f) => path.relative(root, f));
 
 // checkGeminiBuild, checkGeminiDistributionBundle, and checkBuild all need `bun run build
 // --gemini` to have run before asserting file shape / diffing porcelain — memoize so a full

@@ -382,6 +382,22 @@ describe('findReadmeAgentCountMismatch', () => {
 // integration case runs the same pure functions against the real orchestrator.md content to
 // confirm zero false positives (T6 acceptance criterion 1).
 describe('parseSectionLineCounts', () => {
+  test('ignores ## headings inside fenced code blocks (fence-aware)', () => {
+    const content = [
+      '## Real Section',
+      'text',
+      '```',
+      '## Not A Heading',
+      '```',
+      'more text',
+      '## Second Section',
+      'body',
+    ].join('\n');
+    const counts = parseSectionLineCounts(content);
+    expect(Object.keys(counts)).toEqual(['## Real Section', '## Second Section']);
+    expect(counts['## Real Section']).toBe(6);
+  });
+
   test('maps each `##` header to its line count, up to the next `##` header', () => {
     const content = ['## First', 'a', 'b', '## Second', 'c'].join('\n');
     expect(parseSectionLineCounts(content)).toEqual({

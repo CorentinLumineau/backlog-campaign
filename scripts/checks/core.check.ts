@@ -693,8 +693,10 @@ export const parseSectionLineCounts = (content: string): Record<string, number> 
   if (lines.length && lines[lines.length - 1] === '') lines = lines.slice(0, -1);
 
   const headerIdx: number[] = [];
+  let inFence = false;
   lines.forEach((l, i) => {
-    if (/^## /.test(l)) headerIdx.push(i);
+    if (/^(```|~~~)/.test(l)) inFence = !inFence;
+    if (!inFence && /^## /.test(l)) headerIdx.push(i);
   });
 
   const sections: Record<string, number> = {};

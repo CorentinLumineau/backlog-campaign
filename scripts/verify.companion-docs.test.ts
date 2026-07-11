@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { COMPANION_FILE_REQUIRED_VCODES, findMissingCompanionVcodes } from './verify.ts';
+import { COMPANION_FILE_REQUIRED_VCODES, findMissingCompanionVcodes } from './checks/companion-docs.check.ts';
 
 describe('findMissingCompanionVcodes', () => {
   test('all 4 required codes present in a synthetic fixture returns []', () => {

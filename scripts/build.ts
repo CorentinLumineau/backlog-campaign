@@ -266,8 +266,16 @@ export const REQUIRED_REFERENCES = ['review-core.md', 'worker-schemas.md', 'chec
 /** Row count of `src/references/blackhole-vcodes.md`'s `| V-...` table (V-GROUND-01). */
 export const VCODE_TABLE_ROW_COUNT = 43;
 
-/** Total `scripts/verify.ts` check count — bump alongside every new `check*()` added to `main()`. */
-export const EXPECTED_CHECK_COUNT = 25;
+/**
+ * Total check count across every `scripts/checks/*.check.ts` domain file (ADR-007 T5/R2′:
+ * `verify.ts` is a thin runner that glob-discovers these files — there is no central registry).
+ * Bump this alongside any change to a domain file's `runChecks()` array — either adding a new
+ * `scripts/checks/{domain}.check.ts` file (new domain, its own `runChecks()` contributing its
+ * count), or adding/removing an individual check inside an existing domain's `runChecks()`
+ * array. `verify.ts` warns (does not fail) on a mismatch, so this is the sole place the
+ * expectation is declared — never restate it as a literal at any consumption site.
+ */
+export const EXPECTED_CHECK_COUNT = 26;
 
 export const buildGeminiPluginManifest = (pkgVersion: string) => ({
   $schema: 'https://antigravity.google/schemas/v1/plugin.json',

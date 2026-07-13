@@ -46,6 +46,17 @@ The status script emits markdown with:
     (`bands_done` count, or `exhausted: true`/`false` when no bounded total is known).
     Omitted entirely when the `kaizen` block is absent or `enabled: false` (same
     convention as every other kaizen-gated feature).
+11. **Routing** — per active issue carrying a `route{}`: the **planned** conditional chain
+    `Handle → [research?] → [investigate?] → [design-gate?] → Plan(tier) → Implement → Review([security?])`
+    with the current phase bracket-marked (`▸…◂`) and per-flag confidence (`split/design/plan/sec`).
+    This is planned-path + current-position, **not** an actual-history traversal (`route{}` carries
+    no transition log). `research`/`investigate` render as conditional route-driven steps (handled
+    by the `investigator` agent's research/investigate sub-modes). Omitted when no active issue
+    carries a route.
+12. **Waves** — execution waves from a topological sort on `depends_on`, behaviorally identical to
+    `queue-dag.md` § Step 4 (Wave 0 = no unsatisfied deps; Wave N = deps placed in prior waves;
+    merged/closed deps count as satisfied). Dependency cycles surface in an **Unresolved** line,
+    never silently dropped. Omitted when there are no active issues.
 
 ## Coordinator turn flow (with visibility)
 

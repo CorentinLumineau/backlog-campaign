@@ -97,6 +97,20 @@ it did before ADR-004, only because none has re-entered Handle since #118 merged
 docs_impact is router-computed and orchestrator-confidence-gated as of #177, but has no
 dispatch consumer yet.
 
+**Route backfill (ADR-008 rollout)**: to populate `route{}` on the standing queue so the
+dashboard's Routing section (`coordinator-dashboard.md` § Dashboard sections) renders real
+classifications, spawn `router` with `trigger: "initial"` for each in-scope issue.
+**Scope**: issues with `route` absent AND `status` ∉ {`in-flight`, `merged`, `closed`} AND
+`phase != done` (a populated route for finished work adds dashboard rows with no display
+value). **Safety** (no `queue.json` lock strategy — see `blackhole-state.md` § Write protocol):
+run the backfill **sequentially**, one `router` spawn at a time, **never** parallel-batched with
+regular Ready-set worker spawns; skipping `in-flight` avoids a concurrent-write collision with an
+active worker mutating the same issue entry. Backfilling a route is **display-only** — it never
+re-evaluates an already-executed dispatch decision (`orchestrator.md` § Route-derived dispatch
+reads `route{}` once, immediately before spawning `planner`; issues already past `phase: plan`
+are unaffected). One-time backfill, run before that turn's Step 2 Ready-set computation. The
+`route` object schema table above is unchanged (frozen per `router.md` § Schema reference).
+
 ### Status transitions
 
 ```

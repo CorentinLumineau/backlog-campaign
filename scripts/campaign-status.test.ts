@@ -1,11 +1,181 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  computeWaves,
   countLedgerByStatus,
   discoveryFilings,
   formatDashboard,
   groupIssuesByPhase,
   parseCheckpointFrontmatter,
+  renderRouteChain,
+  type Route,
 } from './campaign-status';
+
+const fullRoute: Route = {
+  needs_split: false,
+  needs_research: true,
+  needs_investigation: true,
+  needs_design: true,
+  task_type: 'feature',
+  plan_mode: 'full',
+  security_review_required: true,
+  confidence: { split: 95, design: 80, plan_mode: 70, security: 90 },
+  computed_at_phase: 'handle',
+  revision: 1,
+};
+
+describe('renderRouteChain', () => {
+  test('absent route renders a not-yet-routed placeholder, no crash', () => {
+    expect(renderRouteChain(undefined, 'handle')).toContain('not yet routed');
+  });
+
+  test('full route renders the planned conditional chain', () => {
+    const out = renderRouteChain(fullRoute, 'plan');
+    expect(out).toContain('Handle');
+    expect(out).toContain('research');
+    expect(out).toContain('investigate');
+    expect(out).toContain('design-gate');
+    expect(out).toContain('Plan(full)');
+    expect(out).toContain('Implement');
+    expect(out).toContain('Review(security)');
+  });
+
+  test('marks the current phase in the chain', () => {
+    const out = renderRouteChain(fullRoute, 'plan');
+    // current phase 'plan' is marked; a different phase is not
+    expect(out).toMatch(/▸Plan\(full\)◂/);
+    expect(out).not.toMatch(/▸Implement◂/);
+  });
+
+  test('shows per-flag confidence inline', () => {
+    const out = renderRouteChain(fullRoute, 'handle');
+    expect(out).toContain('split:95');
+    expect(out).toContain('design:80');
+    expect(out).toContain('plan:70');
+    expect(out).toContain('sec:90');
+  });
+
+  test('plan_mode absent defaults to full', () => {
+    const out = renderRouteChain(
+      { needs_design: false, security_review_required: false },
+      'plan',
+    );
+    expect(out).toContain('Plan(full)');
+  });
+
+  test('needs_split voids siblings — renders only the split branch', () => {
+    const out = renderRouteChain(
+      { ...fullRoute, needs_split: true, confidence: { split: 60 } },
+      'handle',
+    );
+    expect(out).toContain('Split');
+    expect(out).not.toContain('design-gate');
+    expect(out).not.toContain('Review(security)');
+  });
+
+  test('omits optional steps when their flags are false', () => {
+    const out = renderRouteChain(
+      {
+        needs_split: false,
+        needs_research: false,
+        needs_investigation: false,
+        needs_design: false,
+        task_type: 'bugfix',
+        plan_mode: 'quick',
+        security_review_required: false,
+      },
+      'implement',
+    );
+    expect(out).not.toContain('research');
+    expect(out).not.toContain('design-gate');
+    expect(out).toContain('Plan(quick)');
+    expect(out).toContain('Review'); // present…
+    expect(out).not.toContain('Review(security)'); // …but not the security variant
+  });
+});
+
+describe('computeWaves', () => {
+  test('empty queue yields no waves and no unresolved', () => {
+    const { waves, unresolved } = computeWaves({});
+    expect(waves).toEqual([]);
+    expect(unresolved).toEqual([]);
+  });
+
+  test('linear dependency chain becomes sequential waves', () => {
+    const { waves } = computeWaves({
+      '1': { status: 'ready', depends_on: [] },
+      '2': { status: 'ready', depends_on: [1] },
+      '3': { status: 'ready', depends_on: [2] },
+    });
+    expect(waves).toEqual([[1], [2], [3]]);
+  });
+
+  test('diamond dependency places shared child once, after both parents', () => {
+    const { waves } = computeWaves({
+      '1': { status: 'ready', depends_on: [] },
+      '2': { status: 'ready', depends_on: [1] },
+      '3': { status: 'ready', depends_on: [1] },
+      '4': { status: 'ready', depends_on: [2, 3] },
+    });
+    expect(waves).toEqual([[1], [2, 3], [4]]);
+  });
+
+  test('all empty depends_on collapse to a single Wave 0', () => {
+    const { waves } = computeWaves({
+      '5': { status: 'ready', depends_on: [] },
+      '6': { status: 'ready', depends_on: [] },
+      '7': { status: 'ready' },
+    });
+    expect(waves).toEqual([[5, 6, 7]]);
+  });
+
+  test('dependency already merged/closed is treated as satisfied', () => {
+    const { waves } = computeWaves({
+      '1': { status: 'merged', depends_on: [] },
+      '2': { status: 'ready', depends_on: [1] },
+    });
+    // merged issue #1 is excluded from waves; #2's dep is satisfied → Wave 0
+    expect(waves).toEqual([[2]]);
+  });
+
+  test('circular dependency surfaces in unresolved, no infinite loop', () => {
+    const { waves, unresolved } = computeWaves({
+      '1': { status: 'ready', depends_on: [2] },
+      '2': { status: 'ready', depends_on: [1] },
+    });
+    expect(waves).toEqual([]);
+    expect(unresolved.sort()).toEqual([1, 2]);
+  });
+
+  test('self-cycle surfaces in unresolved without infinite loop', () => {
+    const { waves, unresolved } = computeWaves({
+      '1': { status: 'ready', depends_on: [1] },
+    });
+    expect(waves).toEqual([]);
+    expect(unresolved).toEqual([1]);
+  });
+
+  test('dep id absent from the in-scope map is treated as satisfied (documented limitation)', () => {
+    // #999 is out of campaign scope → not a key of issues → treated as satisfied.
+    const { waves, unresolved } = computeWaves({
+      '50': { status: 'ready', depends_on: [999] },
+    });
+    expect(waves).toEqual([[50]]);
+    expect(unresolved).toEqual([]);
+  });
+
+  // Shared fixture: asserts computeWaves matches queue-dag.md § Step 4 semantics
+  // (Wave 0 = empty depends_on; Wave N = deps merged/closed in prior waves).
+  test('shared fixture matches queue-dag Step 4 wave numbering', () => {
+    const { waves, unresolved } = computeWaves({
+      '301': { status: 'ready', depends_on: [] },
+      '298': { status: 'ready', depends_on: [] },
+      '302': { status: 'ready', depends_on: [298] },
+      '305': { status: 'ready', depends_on: [301, 302] },
+    });
+    expect(waves).toEqual([[298, 301], [302], [305]]);
+    expect(unresolved).toEqual([]);
+  });
+});
 
 describe('parseCheckpointFrontmatter', () => {
   test('parses YAML frontmatter fields', () => {
@@ -224,5 +394,63 @@ orchestrator_turn_id: 5
     expect(out).toContain('### Active workers');
     expect(out).toContain('worker_1: issue #34 (plan)');
     expect(out).toContain('worker_2: issue #35 (implement)');
+  });
+
+  test('renders Routing section for issues carrying a route', () => {
+    const out = formatDashboard({
+      ...baseOpts,
+      queue: {
+        refreshed_at: '2026-07-05T18:00:00.000Z',
+        issues: {
+          '34': {
+            title: 'Routed issue',
+            phase: 'plan',
+            status: 'in-flight',
+            route: {
+              needs_design: true,
+              plan_mode: 'full',
+              security_review_required: true,
+              confidence: { split: 90, design: 75, plan_mode: 60, security: 88 },
+            },
+          },
+        },
+      },
+    });
+
+    expect(out).toContain('### Routing');
+    expect(out).toContain('#34');
+    expect(out).toContain('design-gate');
+    expect(out).toContain('Review(security)');
+  });
+
+  test('omits Routing section when no issue has a route', () => {
+    const out = formatDashboard({
+      ...baseOpts,
+      queue: {
+        refreshed_at: '2026-07-05T18:00:00.000Z',
+        issues: { '34': { title: 'No route', phase: 'plan', status: 'in-flight' } },
+      },
+    });
+
+    expect(out).not.toContain('### Routing');
+  });
+
+  test('renders Waves section from the dependency DAG', () => {
+    const out = formatDashboard({
+      ...baseOpts,
+      queue: {
+        refreshed_at: '2026-07-05T18:00:00.000Z',
+        issues: {
+          '1': { title: 'Root', phase: 'handle', status: 'ready', depends_on: [] },
+          '2': { title: 'Child', phase: 'handle', status: 'ready', depends_on: [1] },
+        },
+      },
+    });
+
+    expect(out).toContain('### Waves');
+    expect(out).toContain('Wave 0');
+    expect(out).toContain('Wave 1');
+    expect(out).toContain('#1');
+    expect(out).toContain('#2');
   });
 });

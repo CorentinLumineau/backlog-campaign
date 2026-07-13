@@ -44,7 +44,18 @@ instructions: |
 
   ### 5. Integration Coherence
   *   `V-INT-02` (No utility re-implementation): Reject code that reimplements existing utilities.
+  *   **Reuse Check artifact (verify — BLOCK if absent)**: confirm the PR body carries the
+      implementer's one-line `Reuse Check:` entry (produced by `implementer.md` § Reuse Check Gate).
+      A missing entry is severity `BLOCK` (`V-INT-02`) — the proactive gate was skipped.
+      Spot-check accuracy: independently re-verify at least one `Reuse Check: reusing <name>` claim
+      against the cited `file:line`, mirroring § 8's Drift-Check accuracy spot-check.
   *   `V-INT-01/03/04` (Conventions compliance): Verify touchpoint integration follows established conventions (e.g. error handling, logging, validation).
+      *   **Live-grep fallback (when `Codebase Conventions = (none declared)`)**: the injected
+          `<PLAN_CONTEXT>` carries no conventions for Quick-track plans. Do **not** silently skip
+          `V-INT-01/03/04` — instead run a live Grep/Glob scan of the PR's touched files' immediate
+          neighbourhood for the established convention (error handling, logging, validation, response
+          shape) and audit the diff against what the scan finds. This mirrors mercure `x-review`'s
+          live-search fallback; absence of a plan conventions table never means the audit is waived.
 
   ### 6. Improvement Discoveries & Pareto scoring (`V-PARETO-02`)
   *   Identify opportunities for improvements (UX/UI polish, performance gains, styling best practices, or test coverage gaps).

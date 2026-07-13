@@ -5,16 +5,16 @@ created: 2026-07-13
 last_updated: 2026-07-13
 review_trigger: "on ADR acceptance"
 related:
-  - documentation/decisions/ADR-006-routing-visibility-reuse-gate.md
+  - documentation/decisions/ADR-008-routing-visibility-reuse-gate.md
   - documentation/audits/analysis-blackhole-routing-reuse-visibility.md
 plan_base_commit: bbbf2ea
 ---
 
-# Plan — Routing visibility, wave monitoring & proactive reuse enforcement (ADR-006)
+# Plan — Routing visibility, wave monitoring & proactive reuse enforcement (ADR-008)
 
 ## Objective
 
-Implement ADR-006 for the blackhole plugin: make the router's persisted `route{}`
+Implement ADR-008 for the blackhole plugin: make the router's persisted `route{}`
 intelligence visible in the campaign dashboard (Workstream A), shift reuse enforcement
 left into the implementer via a proactive "Reuse Check" PR-body artifact gate
 (Workstream B), and safely roll out router re-triage so `route{}` populates on the
@@ -63,7 +63,7 @@ byte-for-byte identical to what `queue-dag.md` § Step 4's algorithm (Wave 0 = e
 Depends on: A3.
 Acceptance: pure function, client-side topological sort, behaviorally identical to
 `queue-dag.md` § Step 4 for all A3 fixtures; does **not** modify the existing
-`groupIssuesByPhase` (ADR-006 constraint — `campaign-resume-signal.ts` depends on its
+`groupIssuesByPhase` (ADR-008 constraint — `campaign-resume-signal.ts` depends on its
 current signature).
 
 **A5. Add `route?: Route` to `QueueIssue`, define `Route` type.**
@@ -92,7 +92,7 @@ describe the Routing section (planned chain + current-phase marker + per-flag
 confidence — explicitly **not** an actual-history traversal record) and the Waves
 section (topo-sorted issue groups); note that `research`/`investigate` chain steps
 render as conditional route-driven steps (the `investigator` agent is implemented; only the
-pre-existing dispatch-wiring doc inconsistency is out of scope — see ADR-006 § Scope boundary).
+pre-existing dispatch-wiring doc inconsistency is out of scope — see ADR-008 § Scope boundary).
 
 ### Workstream B — Proactive reuse (agent prompts)
 
@@ -119,11 +119,11 @@ spec stays there — `V-DRY`)"); no duplication of the Reuse Check's content spe
 **B3. Extend `src/agents/reviewer.md` § 5 (Integration Coherence).**
 Depends on: B1 (reviewer verifies what implementer produces).
 Acceptance: two new bullet items added to § 5: (a) verify the Reuse Check artifact is
-present in the PR body — **BLOCK** if absent (new intentional gate per ADR-006, not a
+present in the PR body — **BLOCK** if absent (new intentional gate per ADR-008, not a
 WARN); (b) when the injected `Codebase Conventions = (none declared)`, run a live-grep
 fallback over the plan's `touch_paths` so `V-INT-01/03/04` execute instead of silently
 no-oping (mirrors mercure `x-review`'s live Grep/Glob fallback pattern cited in
-ADR-006). No new JSON field — findings stay in the existing
+ADR-008). No new JSON field — findings stay in the existing
 `vcode`/`severity`/`file`/`line`/`summary` shape (`worker-schemas.md` § Reviewer).
 
 **B4. Structural regression check (no `.md`-prompt test harness exists in this repo).**
@@ -144,7 +144,7 @@ dispatch: (i) `orchestrator.md` § Route-derived dispatch step 1 ("Void route") 
 `phase: plan` never has that dispatch decision re-evaluated, so backfilling `route{}`
 for such an issue is **display-only** (feeds the new Routing section from A6/A7) and has
 **zero effect** on already-completed dispatch; (ii) `queue.json` has no lock strategy
-(ADR-006 Constraints) — rollout scope MUST exclude `status: in-flight` issues to avoid a
+(ADR-008 Constraints) — rollout scope MUST exclude `status: in-flight` issues to avoid a
 concurrent-write collision with an active worker's mutation on the same issue entry;
 (iii) rollout MUST execute sequentially, one `router` spawn at a time, never
 parallel-batched with regular Ready-set worker spawns.
@@ -230,8 +230,8 @@ contract; the visibility layer is LOW/additive-only).
 |------|----------|------------|
 | Wave-algorithm drift — `computeWaves` (display) diverges from `queue-dag.md` § Step 4 (scheduling) over time | MEDIUM | A3's shared-fixture test asserts `computeWaves` output matches queue-dag §4 wave numbering for representative dependency graphs (linear + diamond); re-run this fixture test whenever `queue-dag.md` § Scheduling algorithm Step 4 changes |
 | Reuse Check artifact quality — a low-effort grep in B1 could produce a hollow "none found" entry without a real search | MEDIUM | B3 requires the reviewer to independently re-verify at least one Reuse Check claim against the actual codebase before accepting it, mirroring `reviewer.md` § 8's existing Drift-Check Table accuracy spot-check |
-| Router rollout concurrent-write race — spawning `router` against an issue whose entry is being concurrently mutated by an active implementer/reviewer worker could corrupt `queue.json`'s atomic `.tmp`+`mv` write (no lock strategy, ADR-006 Constraints) | HIGH | C1 restricts rollout scope to `status != in-flight` issues only, executed strictly sequentially (one `router` spawn at a time, never parallel-batched with regular worker spawns); C3 verifies `queue.json` remains valid JSON (`jq empty`) after each sequential backfill write before proceeding to the next issue |
-| Rollout display-honesty gap — an issue already past `phase: plan` that receives a backfilled route may show a "planned chain" that does not match the void-route fallback path it actually took | LOW | A7 documents the "planned chain + current phase, not actual history" scope boundary (an explicit, contestable ADR-006 Key Assumption); revisit with an actual-path traversal log only if the user later needs it |
+| Router rollout concurrent-write race — spawning `router` against an issue whose entry is being concurrently mutated by an active implementer/reviewer worker could corrupt `queue.json`'s atomic `.tmp`+`mv` write (no lock strategy, ADR-008 Constraints) | HIGH | C1 restricts rollout scope to `status != in-flight` issues only, executed strictly sequentially (one `router` spawn at a time, never parallel-batched with regular worker spawns); C3 verifies `queue.json` remains valid JSON (`jq empty`) after each sequential backfill write before proceeding to the next issue |
+| Rollout display-honesty gap — an issue already past `phase: plan` that receives a backfilled route may show a "planned chain" that does not match the void-route fallback path it actually took | LOW | A7 documents the "planned chain + current phase, not actual history" scope boundary (an explicit, contestable ADR-008 Key Assumption); revisit with an actual-path traversal log only if the user later needs it |
 | `.claude/` build-output directory could be wiped by `bun run build`/`bun run verify`, losing `.claude/progress.md` / `.claude/initiatives/` | LOW (defense-in-depth; `scripts/build.ts:374-378` already scopes `cleanDir` to `.claude/{agents,rules,skills}` only) | Execution Strategy backs up `.claude/progress.md` and `.claude/initiatives/` before every `bun run build`/`bun run verify` invocation and restores after, per explicit project instruction |
 
 ## Stop Conditions
@@ -292,7 +292,7 @@ after A/B/C2 land (≤4 parallel agents per phase, per `orchestration-strategy.m
 
 ## References
 
-- **ADR**: `documentation/decisions/ADR-006-routing-visibility-reuse-gate.md` — chosen
+- **ADR**: `documentation/decisions/ADR-008-routing-visibility-reuse-gate.md` — chosen
   approach: Option 2 (Observe + shift-left into implementer); rejected: Option 1 (Observe +
   harden review only — leaves reuse reactive), Option 3 (Full audit trail — concurrent-write
   / schema-rollout risk), pre-Gate-2 planner-side reuse gate (destroys Quick-track

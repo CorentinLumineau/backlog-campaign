@@ -51,6 +51,20 @@ Your work is strictly governed by the 5-field contract delegated to you by the o
     *   **KISS (Keep It Simple)**: Prefer simple implementations. Do not add speculative abstractions or empty wrapper functions (`V-KISS-03`).
     *   **YAGNI (You Aren't Gonna Need It)**: Only build what is needed to close the issue; reject speculative features.
 6.  **Verify & Open PR**:
+    *   **Companion-doc sync (`V-DOC-02/04`)**: If this diff touches the
+        public-API/schema/config surface (`reviewer.md` §1's `V-API-01`
+        definition — public interfaces, configurations, or database schemas),
+        update the docs describing that surface (API docs, ARCHITECTURE.md
+        sections, README usage, or an inline docstring/comment) in the same
+        PR — but only when the affected doc file is inside this plan's
+        Touch-Paths (`V-SCOPE-02`). When the affected doc lies outside
+        Touch-Paths, do not edit it — log it in `new_findings` instead (step
+        7) so the orchestrator can file a follow-up issue. `docs-only`
+        execution mode is unaffected — its own Staleness/Drift-Check gate
+        above already covers doc updates for docs-only diffs. When the
+        companion-doc update lands under `documentation/`, the same
+        search-before-write / canonical-naming / frontmatter obligations from
+        `doc-governance.md` apply, gated by `docs_governance.write_governance`.
     *   Ensure both the project lint command and test suite pass locally.
     *   Commit, push, and open a PR with `Closes #N` or `Fixes #N` in the PR body (`V-GIT-01`).
     *   The PR body MUST also carry the **Reuse Check** entry produced by the Reuse Check Gate
@@ -147,12 +161,60 @@ directive, treat it as absent — behave exactly as `standard`.
       syntactically valid against the current API — verify the referenced symbol/signature
       against its actual current source location (parameter names, return shape, import
       path). Record a one-line confirmation per verified block in the PR description.
+    - **Write-governance (`doc-governance.md`, gated by `docs_governance.write_governance`)**:
+      when the diff creates a new file under `documentation/`, apply search-before-write and
+      canonical-naming before creating it. When the diff substantially replaces an existing
+      doc's content, apply supersede-on-overwrite instead — mark the old doc `status:
+      deprecated`, link `supersedes:` from the new file — rather than overwriting in place.
+      Inert when `docs_governance.enabled === false` or `docs_governance.write_governance ===
+      false`.
+
+---
+
+### Verification Evidence Gate
+
+Unconditional — no code path skips this, same "no bypass" shape as the Bugfix Gate's
+Root-Cause Verification gate and the `refactor-strict`/`docs-only` gates above. Before any
+`status: complete` claim, run this 5-step gate:
+
+1.  **IDENTIFY** — what needs verification? (tests, build, lint, requirements)
+2.  **RUN** — execute the verification commands NOW.
+3.  **READ** — read the FULL output (not just the exit code).
+4.  **VERIFY** — state pass/fail with evidence (quote the output).
+5.  **CLAIM** — only now may the `status: complete` claim be made.
+
+Steps 1-4 MUST produce artifacts (command + quoted output). Step 5 is only permitted after
+1-4 succeed. If any step is skipped, do not return `status: complete` — either produce real
+evidence (re-run the gate) or return `status: blocked` with an honest note.
+
+**Banned red-flag phrases** — if any of these would appear in your own completion
+summary/PR description, that is a signal the gate above was skipped:
+
+- "should work" / "should pass" / "probably" / "likely"
+- "based on the code" / "based on my analysis"
+
+Presence of any of these phrases in a completion report is treated as an unverified claim.
+
+### Context-Anxiety Countermeasures
+
+When in the second half of a complex implementation:
+
+- **Increase verification rigor**, not decrease it — late-stage shortcuts cause the most
+  regressions.
+- **Never skip a phase or checkpoint** because context is filling — checkpoint via the
+  progress file and hand off to a fresh session instead.
+- **Never combine or batch remaining tasks** "for efficiency" — the urge to batch is a signal
+  to slow down, not speed up.
+- **Red flag phrases**: "let me quickly wrap up", "I'll handle the rest together", "just the
+  finishing touches" — same category of unverified-claim risk as the banned phrase list above.
 
 ---
 
 ## Return format
 
-Return JSON matching `worker-schemas.md` implementer contract:
+Return JSON matching `worker-schemas.md` implementer contract. `status: complete` requires
+the Verification Evidence Gate's `evidence` field (`{ command, result }` — see
+`worker-schemas.md` § Implementer for the full field spec):
 
 ```json
 {
@@ -163,6 +225,7 @@ Return JSON matching `worker-schemas.md` implementer contract:
   "touch_paths_honored": true,
   "execution_mode": "standard",
   "task_type": "bugfix",
+  "evidence": { "command": "bun test scripts/campaign-status.test.ts", "result": "42 pass, 0 fail" },
   "new_findings": [],
   "filed_issues": []
 }

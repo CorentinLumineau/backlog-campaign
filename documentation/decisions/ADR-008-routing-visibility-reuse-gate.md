@@ -9,7 +9,7 @@ related:
 supersedes:
 ---
 
-# ADR-006 — Routing visibility, wave monitoring & proactive reuse enforcement
+# ADR-008 — Routing visibility, wave monitoring & proactive reuse enforcement
 
 ## Status
 

@@ -36,7 +36,7 @@ relative to the **main clone repo root**, not the worktree checkout.
 2. **Output format**: JSON return schema (below) + PR opened + Closes #N linkage.
 3. **Scope boundaries**: Touch-Paths restriction (`V-SCOPE-02`) + parallel branch exclusions.
 4. **Tool guidance**: Command pointers for running git, gh CLI, install, lint, and test commands within the worktree. Carry the `execution_mode` TDD-mandate branch matching the plan's `route.task_type` derivation (see below), and — when the plan frontmatter carries `task_type: bugfix` (Quick track) — the Bugfix Gate's Decision Record and Scout Check expectations (`implementer.md` § Bugfix Gate).
-5. **Stop condition**: PR opened, local lint/tests green, and branch pushed.
+5. **Stop condition**: PR opened, local lint/tests green, and branch pushed — and, when the diff touches the public-API/schema/config surface within Touch-Paths, companion docs updated in the same PR (`V-DOC-02/04`, `implementer.md` step 6's Companion-doc sync bullet). Phase 0's companion-file scaffold (`SKILL.md` step 2) already creates the *root* `ARCHITECTURE.md`/`AGENTS.md`/`DESIGN.md` when absent, so this bullet only covers diff-triggered *updates* to already-existing companion docs, not initial creation.
 Do not commit directly to main (`V-BRANCH-02`) or force-push (`V-BRANCH-01`).
 - Ledger pointer: read plan deferrals from findings-ledger.json
 
@@ -71,6 +71,15 @@ to implementer at spawn time yet — same non-wiring status as `execution_mode` 
 See [worker-schemas.md](worker-schemas.md) implementer contract. Orchestrator appends `new_findings` to ledger (`phase: implement`) before
 ending turn. For each new finding concerning improvements, best practices, UX/UI, performance, or coverage, the orchestrator files a new GitHub tracking issue (`gh issue create`) to schedule it in the backlog campaign queue.
 See [multitask-mode.md](multitask-mode.md) § Claude Code harness notes for how to verify a spawned worker's completion without chat polling.
+
+**Unverified-claim hold (issue #204)**: the orchestrator treats a worker completion report
+(PR description, JSON `summary`, or any inline text) containing a red-flag phrase from
+`implementer.md`'s Verification Evidence Gate list, or a `status: complete` submission with
+`evidence` absent/empty, as an **unverified claim** — hold the issue at `phase: implement`,
+do not advance to `phase: review`, and do not append the worker's `new_findings` until the
+implementer re-submits with fresh, quoted evidence. Documentation-level obligation only — no
+code enforcement lands in this issue (`scripts/validate-worker-json.ts` and the orchestrator
+dispatch logic are out of Touch-Paths).
 
 
 ## Quality gate (pre-PR)

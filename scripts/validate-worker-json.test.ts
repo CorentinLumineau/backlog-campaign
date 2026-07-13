@@ -64,6 +64,10 @@ describe('validateWorker implementer', () => {
     expectInvalid('implementer', 'implementer-blocked-bad-escalation-trigger.json'));
   test('invalid escalation_trigger type confusion', () =>
     expectInvalid('implementer', 'implementer-blocked-escalation-trigger-type-confusion.json'));
+  test('invalid missing evidence on complete', () =>
+    expectInvalid('implementer', 'implementer-complete-missing-evidence.json'));
+  test('invalid empty evidence on complete', () =>
+    expectInvalid('implementer', 'implementer-complete-empty-evidence.json'));
 });
 
 describe('validateWorker reviewer', () => {
@@ -71,6 +75,10 @@ describe('validateWorker reviewer', () => {
     expectValid('reviewer', 'reviewer-complete-empty.json'));
   test('invalid missing findings', () =>
     expectInvalid('reviewer', 'reviewer-missing-findings.json'));
+  test('valid V-DOC-02/04 finding', () =>
+    expectValid('reviewer', 'reviewer-complete-vdoc-finding.json'));
+  test('valid V-ADA-01 finding', () =>
+    expectValid('reviewer', 'reviewer-complete-vada-finding.json'));
 });
 
 describe('validateWorker router', () => {

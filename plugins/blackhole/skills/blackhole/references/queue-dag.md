@@ -61,7 +61,8 @@ Path: `.blackhole/queue.json` (gitignored at runtime).
   "task_type": "bugfix",
   "plan_mode": "quick",
   "security_review_required": false,
-  "confidence": { "split": 95, "design": 80, "plan_mode": 70, "security": 90 },
+  "docs_impact": false,
+  "confidence": { "split": 95, "design": 80, "plan_mode": 70, "security": 90, "docs": 85 },
   "body_hash": "<sha of issue title+body at classification time>",
   "computed_at_phase": "handle",
   "revision": 1
@@ -78,7 +79,8 @@ Path: `.blackhole/queue.json` (gitignored at runtime).
 | `task_type` | `feature` \| `bugfix` \| `refactor` \| `docs` | Content-derived, never from forge labels; labels are a cautious tie-break only |
 | `plan_mode` | `skip` \| `quick` \| `full` | Would select planner track (steps 3-4 — not yet implemented) |
 | `security_review_required` | boolean | Would select reviewer security mode (step 8 — not yet implemented) |
-| `confidence` | object `{ split, design, plan_mode, security }`, each 0-100 | Per-flag confidence; low confidence resolves to that flag's cautious default (`needs_split → true`, `plan_mode → full`, `security_review_required → true`, `needs_design → true`) |
+| `docs_impact` | boolean | Would select planner/reviewer docs-impact enrichment (dispatch out of scope — computed and confidence-gated only; see #177) |
+| `confidence` | object `{ split, design, plan_mode, security, docs }`, each 0-100 | Per-flag confidence; low confidence resolves to that flag's cautious default (`needs_split → true`, `plan_mode → full`, `security_review_required → true`, `needs_design → true`, `docs_impact → true`) |
 | `body_hash` | string | sha of issue title+body at classification time; staleness marker |
 | `computed_at_phase` | `handle` \| `plan` \| `implement` \| `review` | Phase at which this route was computed |
 | `revision` | number | Bumped on every re-route; never retroactively changes already-executed chain steps |
@@ -92,6 +94,22 @@ security-mode trigger (`review-core.md` § Security-mode review, `phase-review.m
 — #98, PR #124); the `router` agent (step 1 — #95, PR #118) has landed, but every issue in
 today's live queue still falls through the "void route" fallback and dispatches exactly as
 it did before ADR-004, only because none has re-entered Handle since #118 merged.
+docs_impact is router-computed and orchestrator-confidence-gated as of #177, but has no
+dispatch consumer yet.
+
+**Route backfill (ADR-008 rollout)**: to populate `route{}` on the standing queue so the
+dashboard's Routing section (`coordinator-dashboard.md` § Dashboard sections) renders real
+classifications, spawn `router` with `trigger: "initial"` for each in-scope issue.
+**Scope**: issues with `route` absent AND `status` ∉ {`in-flight`, `merged`, `closed`} AND
+`phase != done` (a populated route for finished work adds dashboard rows with no display
+value). **Safety** (no `queue.json` lock strategy — see `blackhole-state.md` § Write protocol):
+run the backfill **sequentially**, one `router` spawn at a time, **never** parallel-batched with
+regular Ready-set worker spawns; skipping `in-flight` avoids a concurrent-write collision with an
+active worker mutating the same issue entry. Backfilling a route is **display-only** — it never
+re-evaluates an already-executed dispatch decision (`orchestrator.md` § Route-derived dispatch
+reads `route{}` once, immediately before spawning `planner`; issues already past `phase: plan`
+are unaffected). One-time backfill, run before that turn's Step 2 Ready-set computation. The
+`route` object schema table above is unchanged (frozen per `router.md` § Schema reference).
 
 ### Status transitions
 

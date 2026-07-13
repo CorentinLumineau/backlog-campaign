@@ -65,6 +65,14 @@ function isNumberArray(value: unknown): value is number[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'number' && !Number.isNaN(item));
 }
 
+function isNonEmptyString(value: unknown): value is string {
+  return isString(value) && value.trim().length > 0;
+}
+
+function isEvidence(value: unknown): value is { command: string; result: string } {
+  return isObject(value) && isNonEmptyString(value.command) && isNonEmptyString(value.result);
+}
+
 function pushEnumError(errors: string[], field: string, value: unknown, allowed: readonly string[]) {
   if (!allowed.includes(String(value))) {
     errors.push(`${field}: invalid enum value "${String(value)}" (expected ${allowed.join('|')})`);
@@ -185,6 +193,13 @@ function validateImplementer(data: unknown): string[] {
     requireField(errors, data, 'branch', isString, 'string');
     requireField(errors, data, 'tests_passed', isBoolean, 'boolean');
     requireField(errors, data, 'touch_paths_honored', isBoolean, 'boolean');
+    requireField(
+      errors,
+      data,
+      'evidence',
+      isEvidence,
+      'object { command: string, result: string } with non-empty command and result',
+    );
     if ('execution_mode' in data) {
       if (!isString(data.execution_mode)) {
         errors.push('execution_mode: expected string');
@@ -252,13 +267,14 @@ function validateRoute(route: unknown, path: string): string[] {
   }
 
   requireField(errors, route, 'security_review_required', isBoolean, 'boolean');
+  requireField(errors, route, 'docs_impact', isBoolean, 'boolean');
 
   if (!('confidence' in route)) {
     errors.push('confidence: required');
   } else if (!isObject(route.confidence)) {
     errors.push('confidence: expected object');
   } else {
-    for (const field of ['split', 'design', 'plan_mode', 'security'] as const) {
+    for (const field of ['split', 'design', 'plan_mode', 'security', 'docs'] as const) {
       requireField(errors, route.confidence, field, isConfidenceScore, 'number (0-100)');
     }
   }

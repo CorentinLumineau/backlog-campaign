@@ -25,7 +25,7 @@ Every worker subagent prompt you write MUST explicitly declare these 5 fields:
 1.  **Objective**: Detailed issue goals, acceptance criteria, and specific requirements.
 2.  **Output Format**: Deliverables (e.g. branch pushed, PR opened).
 3.  **Scope Boundaries (Touch-Paths)**: List of files allowed to be modified (`V-SCOPE-02`). Restrict changes strictly to these.
-4.  **Tool Guidance**: Specific commands to execute (e.g., project test and lint commands). **Mandate establishing a TDD Baseline** by running existing tests first before editing any files. When the plan's `execution_mode` is `standard` (default, absent == `standard`), mandate failing-tests-first; `refactor-strict`, mandate the pre-existing suite pass unmodified (no new/deleted test files); `docs-only`, suppress the failing-test-first mandate and restrict Touch-Paths to documentation paths.
+4.  **Tool Guidance**: Specific commands to execute (e.g., project test and lint commands). **Mandate establishing a TDD Baseline** by running existing tests first before editing any files. When the plan's `execution_mode` is `standard` (default, absent == `standard`), mandate failing-tests-first; `refactor-strict`, mandate the pre-existing suite pass unmodified (no new/deleted test files); `docs-only`, suppress the failing-test-first mandate and restrict Touch-Paths to documentation paths. Must also include the § Error Classification taxonomy below, so `planner`/`implementer`/`reviewer` self-classify their own tool/spawn failures identically before returning `status: blocked`/`error`.
 5.  **Stop Condition**: Criteria for task completion. **Mandate TDD**: any new logic/bug fix must have failing tests written first before implementing the code solution, ensuring tests and linter are green before completion.
 
 ### Worker spawn model
@@ -45,7 +45,7 @@ full matrix: `{{AGENT_DIR}}/skills/blackhole/references/model-routing.md`).
 | Spawn | Typical tier |
 |-------|----------------|
 | `router`, `investigator` (investigate), `planner` skip | `economy` |
-| `planner` quick/standard, `reviewer`, `orchestrator`, `implementer` (default) | `standard` |
+| `planner` quick/standard, `reviewer`, `orchestrator`, `implementer` (default), `hunter` | `standard` |
 | `planner` design, `implementer` + security/`size:xl`, `reviewer` at high `review_iteration` | `premium` |
 
 Do **not** read `model:` from agent markdown frontmatter (`V-AGENT-01`). On
@@ -80,7 +80,13 @@ order — each step is a hard gate over the ones below it:
    confidence → treat as `full` (no directive); `needs_design` low confidence → treat as
    `true` (dispatch to design track — never skip the human design gate on an uncertain
    classification). Note for completeness: `security_review_required`'s cautious default
-   is `true`; its dispatch is out of scope for this step (#98).
+   is `true`; its dispatch is out of scope for this step (#98). `docs_impact`'s confidence
+   gate follows the identical rule — compare `route.confidence.docs` against
+   `router_confidence_thresholds.docs` (default 70); below threshold, **or** when
+   `.blackhole/config.json` `docs_governance.enabled` or `docs_governance.docs_impact_routing`
+   is `false`, resolve to `docs_impact`'s cautious default (`true`) instead of the computed
+   value. Its dispatch — enriching planner/reviewer prompts — is out of scope for this step
+   (see #177 scope note; mirrors `security_review_required`'s #98 precedent).
 4. **`needs_design: true`** (post-confidence-gate) → spawn `planner` with an explicit
    `track: design` directive (track already implemented, #94/#101). See
    `phase-plan.md` § Plan approval gate, "Design track (ADR-004)" row — the
@@ -140,6 +146,25 @@ This preamble is binding: implementers must not edit outside Touch-Paths;
 reviewers audit against them (`V-SCOPE-02`).
 
 Worker return schemas: `{{AGENT_DIR}}/skills/blackhole/references/worker-schemas.md`.
+
+---
+
+## Error Classification (Transient / Permanent / Partial-Corruption)
+
+This section is the **single source** for campaign tool/spawn failure classification —
+`recovery-protocol.md` and `worker-schemas.md` cross-reference it, they do not restate the
+table.
+
+| Class | Examples | Action |
+|-------|----------|--------|
+| **Transient** | CI run `cancelled` with no real error; `Base branch was modified` merge race; network timeouts | Retry ≤2 with backoff, then reclassify **Permanent** |
+| **Permanent** | `escalation_trigger: touch_paths_overrun`; missing command (exit `127`) | Report with actionable context; skip optional steps with a warning; append a Failed-Approaches entry (`checkpoint-protocol.md` § Failed-Approaches Log) |
+| **Partial/Corruption** | Partial DB write without compensation; desynced state journal | Verify artifacts before trusting them, resume from checkpoint, data safety first |
+
+Before respawning `planner`/`implementer` for an issue that already has
+Failed-Approaches entries in `campaign-checkpoint.md`, include those entries verbatim in
+the 5-Field Delegation Contract's **Objective** field — so a resumed campaign never
+re-attempts a known dead end on the same issue.
 
 ---
 
@@ -218,7 +243,17 @@ orchestrator that has already ended its turn.
 For each completed worker:
 
 1. Parse and validate return JSON (`scripts/validate-worker-json.ts` or harness hook output) — see `worker-schemas.md` § Orchestrator validation and § Barrier triage.
-2. Apply queue/ledger mutations per role (router → `route{}`; planner → plan gate; implementer → PR linkage; reviewer → aggregate pipeline).
+2. Apply queue/ledger mutations per role, **serially, one completed worker at a time** — even
+   though the batch itself ran in parallel, the orchestrator never parallelizes the
+   `queue.json`/`findings-ledger.json` writes (router → `route{}`; planner → plan gate;
+   implementer → PR linkage; reviewer → aggregate pipeline). This is the
+   single-writer-orchestrator invariant (`blackhole-state.md` § Single-writer invariant):
+   parallel-batch workers (e.g. a router wave) never write these two files directly — they
+   return computed data, and the orchestrator alone applies it. For each completed `router`,
+   construct the full `routing_decisions` row from its returned JSON before appending: assign
+   `id` from `next_routing_id`, `issue_ref` from spawn context, `created_at` = now, and copy
+   `route`, `trigger`, and `local_analyze` verbatim from the return (`worker-schemas.md` §
+   Router).
 3. Remove the worker from `## In-flight workers`.
 4. **Idempotency:** if the artifact already satisfies the gate before spawn (e.g. `route{}` present, plan file on disk, PR open), skip re-spawn and advance phase. When checkpoint lists workers as active but artifacts already landed, run `recovery-protocol.md` §9 drift heal at turn start (`detectArtifactDrift`) — do not re-spawn completed workers when artifacts match the current revision.
 
@@ -228,7 +263,7 @@ Run the **Checkpoint protocol** turn-end checklist only when `## In-flight worke
 empty. If any worker is still in-flight, **do not** increment `orchestrator_turn_id` or
 end the turn.
 
-Per `merge-gate.md` § 1: before merging an LGTM'd issue's PR, evaluate `mergeEligible(issue)` — hold/merge_after/gated-batch checks, never duplicated inline here.
+Per `merge-gate.md` § 1: before merging an LGTM'd issue's PR, evaluate `mergeEligible(issue)` — hold/merge_after/gated-batch checks, never duplicated inline here. The CI-wait itself (`phase-loop.md` § Merge protocol step 2) follows this same § Background worker barrier idiom — a detached poll the orchestrator barriers on in-turn, never a foreground sleep — not a new, parallel background-task concept.
 
 ---
 
@@ -272,6 +307,43 @@ implementer until worktree scope matches a single issue.
 *   **Blocker Gates**: If an issue plan contains unresolved ambiguity, product choices, UX questions, or destructive schema operations, set `status: blocked` and `notes: awaiting-user-clarification` in `queue.json`. Pause implementation worker spawns and delegate to the coordinator to trigger `AskQuestion`.
 *   **Plan Sign-Off**: Wait for explicit user approval before spawning implementation workers if `notes: awaiting-plan-approval` is set.
 *   **Auto-Proceed**: Skip confirmation only for narrow, unambiguous technical fixes with complete AC.
+*   **Blocked-Iteration Escalation**: Track the per-issue Blocked-Iteration Counter (`checkpoint-protocol.md` § Blocked-Iteration Counter) — increment once per turn an issue's `status` remains `blocked` with no transition since the prior turn; reset to `0` the moment `status` leaves `blocked`. Never abandon the loop silently: at count `3`, set that issue's `notes` to `blocked-escalated:<Transient|Permanent|Partial>:<short-reason>` and surface it to the coordinator via the `CHECKPOINT` line's `BLOCKED-ESCALATED` segment (`checkpoint-protocol.md` § Session handoff) — mirroring the existing `review_iteration` escalate-at-4+ precedent (§ Review pipeline above).
+
+---
+
+## Incident Mode
+
+A stricter, campaign-wide variant of the blocker gating above — consult this section before
+§ Continuous Discovery & Pareto Sorting runs.
+
+**Trigger signals**: a prod outage report, a data-loss risk, or a CRITICAL-severity bug on a
+live surface. A concrete, already-observable instance of the third signal: a
+**`Permanent`**-classified Blocked-Iteration Escalation (`notes:
+blocked-escalated:Permanent:<reason>` — § Human-in-the-Loop (HITL) & Blocker Gating above,
+composed with § Error Classification) on an issue whose Touch-Paths/labels mark it as
+touching a live/production surface. This section does not invent a second, parallel severity
+taxonomy — it reuses the landed § Error Classification / § HITL Blocker Gating machinery as
+its sole machine-observable signal.
+
+**Entry mechanism**: a human/coordinator arms `config.json.incident_mode.enabled: true`
+(`config-template.md`) upon recognizing one of the trigger signals above. Entry is manual,
+not automatic detection — no severity-label taxonomy exists in this repo to key an automatic
+detector off.
+
+**Effect while active**: `parallel_max` is treated as `incident_mode.parallel_max_override`
+(default `1`) regardless of `config.json.parallel_max` — the consumer is `phase-loop.md`'s
+"Spawn parallel batch" checklist line; only the declared incident issue(s) may be
+`in-flight`. `blackhole-state.md`'s existing "at most one `migration_slot: true` in-flight"
+rule is strictly binding (zero tolerance) while incident mode is active — this restates, it
+does not duplicate, that rule. `phase-loop.md`'s "## Continuous Discovery of Improvements
+(Backlog Growth)" section is paused entirely for the duration.
+
+**Exit criteria**: incident mode reverts to normal dispatch when, and only when, the declared
+incident issue reaches `status: merged`, its merge record carries verification evidence
+(`phase-loop.md` § Merge protocol step 5 "deploy verify per runbook"), **and** the issue
+carries no outstanding Blocked-Iteration Escalation and no unresolved `Permanent`
+Failed-Approaches entry (`checkpoint-protocol.md` § Failed-Approaches Log). There is no
+auto-exit on a timeout or on the next turn alone — all three conditions must hold together.
 
 ---
 
@@ -284,3 +356,44 @@ implementer until worktree scope matches a single issue.
     *   If $\text{Priority} \ge 30$, execute `gh issue create --title "[Discovery] <Name>" --body "..." $(bun scripts/forge-scope.ts create-args)` to push it to the GitHub forge, and log it as `deferred`.
     *   If $\text{Priority} < 30$, set status in ledger to `archived` and skip issue creation to avoid backlog noise.
 *   **Ready Queue Sorting**: Automatically sort the ready set in `queue.json` in descending order of their Priority score, ensuring high-ROI issues are scheduled for implementation first.
+
+---
+
+## Kaizen hunt dispatch
+
+ADR-006's proactive counterpart to § Continuous Discovery above (which triages *reactive*
+discoveries reported by workers/reviewers). Hunt waves are dispatched by three triggers: the
+`hunt [kind]` SKILL mode (manual, any time), the on-empty check (`phase-loop.md` §
+Campaign complete), and the every-n-loops interleave (`phase-loop.md` § Next batch step 0).
+All three call into the same protocol — the entire spawn/dedup/gate/file/cap/watermark
+mechanics and all four stop conditions are specified **once**, in
+`{{AGENT_DIR}}/skills/blackhole/references/phase-loop.md` § Kaizen hunt dispatch — this
+section does not duplicate that content; it owns only the `hunter` spawn contract.
+
+**5-Field Delegation Contract for the `hunter` spawn:**
+
+1.  **Objective**: The `kind` to scan (one of `kaizen.kinds`) and the territory band
+    directive — the unscanned bands for that kind, derived from
+    `hunt_state.kinds.<kind>.bands_done` — set as an explicit spawn-context directive, never
+    self-selected by `hunter` (mirrors the `investigator` sub-mode dispatch precedent, §
+    Investigator agent in `phase-handle.md`).
+2.  **Output Format**: `hunter`'s JSON contract (`worker-schemas.md` § Hunter — pointer only,
+    not restated here): `status`, `kind`, `wave`, `territory`, `findings[]`.
+3.  **Scope Boundaries**: Read-only — no `queue.json`/ledger mutation, no issue filing.
+    `hunter`'s own agent definition (`hunter.md`) already declares this; this contract line
+    only restates the boundary at spawn time, per every other worker spawn's convention.
+4.  **Tool Guidance**: None beyond `hunter`'s existing tool policy
+    (`disallowedTools: [Write, Edit, Delete]`, same blanket restriction as every other
+    coordinate/evidence-only agent in this file).
+5.  **Stop Condition**: `status: complete` with `findings[]` populated (or empty array if
+    nothing found), exactly one wave per spawn — `hunter` never loops internally across
+    waves, even when `territory.exhausted` comes out `false`.
+
+Model tier: `standard` (§ Worker spawn model above; `model-routing.md`'s `hunter` row is the
+SSOT for the rationale).
+
+Filing/dedup/watermark mechanics (V-PARETO-02 gate + bug severity floor, ledger idempotency
+dedup, `[Kaizen]` issue filing via `filing.md`'s template, `max_issues_per_wave` cap,
+`hunt_state` watermark write, and all four stop conditions — territory exhausted, `max_waves`,
+3 dry waves, gated-batch mid-flight no-op): see `phase-loop.md` § Kaizen hunt dispatch (single
+source, not duplicated here).

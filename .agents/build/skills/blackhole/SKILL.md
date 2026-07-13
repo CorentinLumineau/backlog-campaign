@@ -14,6 +14,11 @@ If the agent lacks a native long-running goal loop, use Multitask Mode (Pattern 
 Full flow: [multitask-mode.md](references/multitask-mode.md)
 Orchestrator spawn text: [campaign-prompt.md](references/campaign-prompt.md)
 
+If the harness has a deterministic fan-out primitive **and** background→foreground completion
+notifications (capabilities C1/C2 in [claude-code-native.md](references/claude-code-native.md)),
+prefer **Pattern C**: main chat acts as orchestrator directly, no coordinator, gate-first batched
+clarify in the foreground. Full flow: [claude-code-native.md](references/claude-code-native.md).
+
 Direct `/blackhole run` or `/goal` in a single session: act as orchestrator (legacy Pattern A) — still follow all phases below.
 
 ## Modes
@@ -26,6 +31,7 @@ Direct `/blackhole run` or `/goal` in a single session: act as orchestrator (leg
 | `plan #N` | `plan #N` | Orchestrator — phase 2 only |
 | `implement #N` | `implement #N` | Orchestrator — phase 3 only |
 | `review #N` | `review #N` | Orchestrator — phase 4 only |
+| `hunt [kind]` | `hunt`, `hunt <kind>` | Orchestrator — manual kaizen wave (`kaizen.trigger: manual`, or any time regardless of trigger) |
 | `campaign-audit` | `audit`, `campaign audit` | Read-only protocol conformance check |
 
 ## Phase 0: Bootstrap (ALL modes)
@@ -33,10 +39,19 @@ Direct `/blackhole run` or `/goal` in a single session: act as orchestrator (leg
 **Native forge sync** — automatic, never AskQuestion to confirm.
 
 1. **Config** — `.blackhole/config.json` (from `config-template.md` in this repo)
-2. **State init** — `queue.json`, `findings-ledger.json`, `plans/`
-3. **Validate** — `jq empty` on both JSON files
-4. **Forge sync** — if `auto_sync` true (default): `gh auth status` then [forge-sync.md](references/forge-sync.md). Sandbox: `full_network`.
-5. **Dashboard** — open issues/PRs, new since sync, in-flight, LEDGER OPEN, ready set
+2. **Companion-file scaffold** — gated by `docs_governance.companion_files` (default `true`,
+   config already loaded from step 1; skip entirely when `false` or `docs_governance.enabled`
+   is `false`). For `ARCHITECTURE.md`/`AGENTS.md`, create the root file from
+   `templates/companion-files/{name}.template` **only if it does not already exist**,
+   substituting `{project-name}` from `.blackhole/config.json`'s `repo` field
+   (`owner/repo-name` → `repo-name`) or `basename "$(pwd)"` when `repo` is absent or has no
+   `/`. Additionally create `DESIGN.md` under the same skip-if-exists rule **only when**
+   `bash scripts/detect-frontend.sh` emits `frontend=yes`. Full contract:
+   [templates/companion-files/README.md](../templates/companion-files/README.md).
+3. **State init** — `queue.json`, `findings-ledger.json`, `plans/`
+4. **Validate** — `jq empty` on both JSON files
+5. **Forge sync** — if `auto_sync` true (default): `gh auth status` then [forge-sync.md](references/forge-sync.md). Sandbox: `full_network`.
+6. **Dashboard** — open issues/PRs, new since sync, in-flight, LEDGER OPEN, ready set
 
 ---
 
@@ -101,7 +116,9 @@ Read-only conformance check (`campaign-audit`):
 | F-PHASE-01 | Five phase playbooks present and named correctly |
 | F-VERIFY-01 | `bun run verify` passes |
 | F-SCHEMA-01 | Fixture JSON validates |
-| F-DRIFT-01 | ground-truth counts match actual files |
+| F-DRIFT-01 | declaration vs independent-scan conformance — see `build.ts` § facts |
+| F-DOCS-01 | Companion files present (`ARCHITECTURE.md`, `AGENTS.md`) / `documentation/decisions/INDEX.md` current on consumer repo (read-only, report only) |
+| F-HUNT-01 | Kaizen hunt conformance (read-only, report only): (a) `hunt_state` watermark internally consistent — each kind key exists in `kaizen.kinds`, `waves <= kaizen.max_waves`, `exhausted` forced `true` once `waves` or `dry_waves` hits its stop threshold; (b) sample hunt-origin filed issues (ledger `phase: hunt` rows with `deferred_to_issue` set) — re-read the cited `file:line` against the issue's Verbatim-code excerpt, flag drift as STALE-since-filing (does not roll back); (c) cumulative filed-issue count per kind does not exceed `waves(kind) * kaizen.max_issues_per_wave` (upper-bound cap sanity check) |
 
 Do not modify code during audit — report only.
 

@@ -4,6 +4,12 @@ Structured JSON contracts for campaign worker agents. The orchestrator validates
 
 Optional: consumers may install the Cursor SubagentStop hook below for machine-enforced structural validation at subagent handoff.
 
+On a harness with a native orchestration primitive (Pattern C, see
+[claude-code-native.md](claude-code-native.md)), a `schema:` option on the fan-out tool call can
+mechanically enforce these same contracts at the tool-call layer — the JSON shapes below are the
+schema source, unchanged. This complements, not replaces, the SubagentStop hook / `validate-worker-json.ts`
+path documented below for harnesses without a native fan-out primitive.
+
 ## SubagentStop hook (Cursor)
 
 **Install:** Merge the `hooks` block from [`templates/hooks/subagent-stop-validate.json`](../../templates/hooks/subagent-stop-validate.json) into your project's `.cursor/hooks.json`. Requires `bun` on `PATH`; hook `command` paths are relative to the repo root.
@@ -181,6 +187,7 @@ When `status: blocked`, `failing_checks` lists failed items:
   "tests_passed": true,
   "touch_paths_honored": true,
   "execution_mode": "standard",
+  "evidence": { "command": "bun test scripts/campaign-status.test.ts", "result": "42 pass, 0 fail" },
   "new_findings": [],
   "filed_issues": []
 }
@@ -196,6 +203,7 @@ When `status: blocked`, `failing_checks` lists failed items:
 | `execution_mode` | `standard` \| `refactor-strict` \| `docs-only` | no, optional — absent defaults to `standard` |
 | `task_type` | `feature` \| `bugfix` \| `refactor` \| `docs` | no, optional |
 | `escalation_trigger` | `failed_attempts` \| `touch_paths_overrun` | no, optional — only meaningful on `status: blocked` |
+| `evidence` | object `{ command: string, result: string }` | yes when `status: complete`; absent when `blocked`/`error` |
 | `new_findings` | finding[] | no |
 | `filed_issues` | number[] | no |
 
@@ -247,6 +255,19 @@ gate also produces (content spec stays there — `V-DRY`).
 See `implementer.md` § Reuse Check Gate for the unconditional `Reuse Check:` PR-body entry every
 implementer session produces (verified by `reviewer.md` § 5 — content spec stays there, `V-DRY`).
 
+### `evidence` (required for `status: complete` — ADR: verification-evidence gate, issue #204)
+
+Object `{ command: string, result: string }` produced by `implementer.md` § Verification
+Evidence Gate's RUN/READ/VERIFY steps: `command` is the primary verification command actually
+executed (test suite, or lint+test combined for a Quick-track doc change); `result` is the
+verbatim last/summary result line of that command's output — not a paraphrase.
+
+**Non-goal for this issue**: `scripts/validate-worker-json.ts` does not yet structurally
+enforce this field's presence or shape, and no fixture under `fixtures/worker-json/`
+exercises it — both are out of this issue's declared Touch-Paths. Wiring structural
+enforcement (a `verify.evidence-gate.test.ts` content-assertion check plus a fixture update)
+is recommended as a follow-up issue.
+
 ## Reviewer (`reviewer`)
 
 ```json
@@ -260,6 +281,9 @@ implementer session produces (verified by `reviewer.md` § 5 — content spec st
       "line": 42,
       "summary": "Empty catch block in query wrapper"
     }
+  ],
+  "recheck": [
+    { "finding_id": "F-00042", "verdict": "fixed", "evidence": "L.128 now validates input before query" }
   ]
 }
 ```
@@ -269,6 +293,21 @@ implementer session produces (verified by `reviewer.md` § 5 — content spec st
 | `status` | `complete` \| `error` | yes |
 | `findings` | finding[] | yes (empty array = no issues found) |
 | `error` | string | when `status: error` |
+| `recheck` | `{finding_id, verdict, evidence}[]` | required only when the reviewer was dispatched in recheck mode (`review-core.md` § Recheck mode); absent/omitted for a normal full-audit review |
+
+### `recheck` (optional — recheck-mode fast path, issue #214)
+
+Carries one entry per prior finding named in the recheck-mode prompt, verifying whether the
+fix commits resolved it:
+
+- `finding_id` — the existing ledger `F-NNNNN` id (`findings-ledger.md`) of the prior finding
+  being rechecked, not a new id scheme.
+- `verdict` — `fixed` \| `not_fixed`. `not_fixed` is treated identically to a `BLOCK` finding
+  for that same `finding_id` — the reviewer must also emit a corresponding `findings` entry
+  when `verdict: not_fixed`, so the aggregate script and LGTM gate need no special-casing for
+  `recheck`.
+- `evidence` — a short concrete pointer (e.g. `file:line` + what changed) showing why the
+  finding is judged fixed or not — not a restatement of the original finding summary.
 
 ### Finding shape (shared)
 
@@ -300,12 +339,14 @@ implementer session produces (verified by `reviewer.md` § 5 — content spec st
     "task_type": "bugfix",
     "plan_mode": "quick",
     "security_review_required": false,
-    "confidence": { "split": 95, "design": 80, "plan_mode": 70, "security": 90 },
+    "docs_impact": false,
+    "confidence": { "split": 95, "design": 80, "plan_mode": 70, "security": 90, "docs": 85 },
     "body_hash": "<sha of issue title+body at classification time>",
     "computed_at_phase": "handle",
     "revision": 1
   },
-  "trigger": "initial"
+  "trigger": "initial",
+  "local_analyze": null
 }
 ```
 
@@ -314,17 +355,25 @@ implementer session produces (verified by `reviewer.md` § 5 — content spec st
 | `status` | `routed` \| `error` | yes |
 | `route` | object | when `routed` (`null` when `error`) |
 | `trigger` | `initial` \| `clarify-resolved` \| `research-landed` \| `investigation-landed` | when `routed` |
+| `local_analyze` | object \| `null` | when `routed` (`null` when `error`, or when the confidence-boost mechanism did not trigger) |
 | `error` | string | when `status: error` |
 
 `route`'s own field names, enum values, and types are frozen — see `queue-dag.md` § `route`
-object (not re-tabulated here). The `routing_decisions` ledger row this write produces is
-documented in `findings-ledger.md` § "Routing decision records".
+object (not re-tabulated here). `local_analyze`'s shape (`triggered`, `reason`,
+`touch_paths_scanned`, `matches[]`, `security_review_required_raised`,
+`plan_mode_confidence_boosted`) is frozen — see `findings-ledger.md` § "Routing decision
+records" (not re-tabulated here). The router never writes `queue.json` or
+`findings-ledger.json` directly (single-writer-orchestrator invariant, `blackhole-state.md` §
+Single-writer invariant): the orchestrator constructs and appends the `routing_decisions`
+ledger row — assigning `id` from `next_routing_id`, `issue_ref` from spawn context, and
+`created_at` = now — from this returned JSON, at triage time (`orchestrator.md` § Triage).
 
 ```json
 {
   "status": "error",
   "route": null,
   "trigger": "initial",
+  "local_analyze": null,
   "error": "gh issue view failed: not found"
 }
 ```
@@ -370,6 +419,80 @@ Summary/Findings/Sources). Full behavioral spec: `investigator.md` (not duplicat
 `plans/issue-N-investigation.md` (investigate sub-mode) — co-located with `plans/issue-N.md`,
 mirroring `planner.md`'s Design Track sibling-artifact convention (`plans/issue-N-design.md`).
 
+## Hunter (`hunter`)
+
+```json
+{
+  "status": "complete",
+  "kind": "quickwins",
+  "wave": 3,
+  "territory": {
+    "bands_scanned": ["src/agents", "src/references"],
+    "exhausted": false
+  },
+  "findings": [
+    {
+      "kind": "quickwins",
+      "file": "src/agents/orchestrator.md",
+      "line": 88,
+      "summary": "Dead conditional branch never reached after ADR-004 routing landed",
+      "evidence_snippet": "if (route.needs_split && false) { ... }",
+      "rationale": "The `&& false` makes this branch unreachable; safe deletion reduces confusion for future readers",
+      "gain": 4,
+      "effort": 1,
+      "severity": "LOW",
+      "verification": "CONFIRMED"
+    }
+  ]
+}
+```
+
+| Field | Values | Required |
+|-------|--------|----------|
+| `status` | `complete` \| `error` | yes |
+| `kind` | one of `kaizen.kinds` (e.g. `quickwins`, `best-practices`, `coverage`, `refactor`, `bug`) | yes |
+| `wave` | number | yes — matches `hunt_state.kinds.<kind>.waves` at spawn time + 1 |
+| `territory.bands_scanned` | string[] | yes — bands scanned during this wave, merged into `hunt_state.kinds.<kind>.bands_done` on completion |
+| `territory.exhausted` | boolean | yes — whether no unscanned bands remain for this kind |
+| `findings` | finding[] | yes (empty array = nothing found this wave) |
+| `error` | string | when `status: error` |
+
+### Finding shape (Hunter)
+
+| Field | Values | Required |
+|-------|--------|----------|
+| `kind` | matches envelope `kind` | yes |
+| `file` | string | yes |
+| `line` | number | yes |
+| `summary` | string | yes |
+| `evidence_snippet` | string | yes — verbatim excerpt proving the finding is real, not hypothetical |
+| `rationale` | string | yes |
+| `gain` | number 1-10, per the kind's calibration table | yes |
+| `effort` | number 1-10, per the kind's calibration table | yes |
+| `severity` | `LOW` \| `MEDIUM` \| `HIGH` \| `BLOCK` | yes |
+| `verification` | `CONFIRMED` \| `STALE` | yes |
+
+The hunter runs its verification pass unconditionally before returning: only `CONFIRMED`
+findings may be filed as issues — filing an unverified finding is `V-HUNT-01` (BLOCK).
+`STALE` findings (evidence no longer matches current source) are dropped, never filed.
+`gain`/`effort` are 1-10, anchored by the kind's calibration table (`src/references/hunt/`,
+issue #198) — the hunter itself does not compute `Priority`; the orchestrator computes
+`Priority = Gain * (11 - Effort)` and gates filing against `kaizen.min_priority` and
+`kaizen.max_issues_per_wave` — a wave that files more issues than `max_issues_per_wave`, or
+below `min_priority`, is `V-HUNT-02` (WARN). One wave per spawn: the hunter never loops
+internally across waves.
+
+```json
+{
+  "status": "error",
+  "kind": "quickwins",
+  "wave": null,
+  "territory": null,
+  "findings": [],
+  "error": "gh issue view failed: not found"
+}
+```
+
 ## Review aggregate (`scripts/review-aggregate.ts`)
 
 Orchestrator invokes after `reviewer` completes. Not a worker agent — deterministic script output:
@@ -410,7 +533,22 @@ After a background worker batch barrier completes (`orchestrator.md` § Backgrou
 
 1. **Barrier complete** → validate each worker JSON (`scripts/validate-worker-json.ts`) **before** mutating `queue.json`.
 2. **Idempotency:** if `route{}`, plan file, or PR already satisfies the phase gate, log skip and advance without re-spawn.
-3. **Validation failure:** keep the issue `in-flight`, do not end the orchestrator turn until the error is routed (existing worker error handling).
+3. **Validation failure:** classify per `orchestrator.md` § Error Classification (sole
+   taxonomy, not restated here) before deciding retry vs escalate — **Transient** → retry
+   ≤2 with backoff; **Permanent** → report with actionable context and append a
+   Failed-Approaches entry (`checkpoint-protocol.md` § Failed-Approaches Log);
+   **Partial/Corruption** → verify artifacts, resume from checkpoint. Keep the issue
+   `in-flight`, do not end the orchestrator turn until the error is routed.
 
 The SubagentStop **validate** hook checks JSON at handoff; the **resume** hook (#154) automates the outer coordinator loop via `resume-request.json` and an orchestrator→coordinator doorbell only. Inner-loop continuity remains the orchestrator in-turn `Await` barrier (#151) — worker stops do not inject `followup_message` to the orchestrator.
+
+### Blocked-iteration escalation (orchestrator → coordinator)
+
+**Not a new worker JSON contract** — no `status`/`route` fields. A plain-text signal
+riding on the existing `CHECKPOINT` session-handoff line
+(`checkpoint-protocol.md` § Session handoff), fired when the Blocked-Iteration
+Escalation rule (`orchestrator.md` § Human-in-the-Loop (HITL) & Blocker Gating) trips at
+count `3` for one or more issues: the `CHECKPOINT` line's optional
+`| BLOCKED-ESCALATED: #<issue>[,#<issue>...]` trailing segment lists them, so the
+campaign never loops silently on a blocked issue.
 <!-- GENERATED by scripts/build.ts from src/references/worker-schemas.md — do not hand-edit -->

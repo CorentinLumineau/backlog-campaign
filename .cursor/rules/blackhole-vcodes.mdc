@@ -34,6 +34,14 @@ longer definitions (token cost, drift). Persist every finding to
 | V-PARETO-01 | No >3× complexity for marginal gain | WARN |
 | V-PARETO-02 | Pareto scoring & gating: Priority = Gain * (11 - Effort) must be >= 30 to create an issue, and ready issues are sorted by Priority descending | BLOCK |
 | V-DOC-02/04 | Public-API and design docs updates in the same PR | BLOCK |
+| V-ADA-01 | `ARCHITECTURE.md` absent at project root/package (remedy: create from template) | WARN |
+| V-ADA-02 | `documentation/decisions/INDEX.md` missing an Accepted ADR added in this diff (remedy: append INDEX row) | WARN |
+| V-ADA-03 | `DESIGN.md` absent when diff touches a detected frontend/UI project (remedy: flag) | WARN |
+| V-ADA-05/06/07 | `AGENTS.md` absent at root, new monorepo package missing `AGENTS.md`, or package `AGENTS.md` unindexed at root (remedy: flag) | WARN |
+| V-DOC-GOV-01 | New doc created under `documentation/` without a search-before-write check (duplicate-concern risk) | WARN |
+| V-DOC-GOV-02 | Doc under `documentation/` missing lifecycle frontmatter (`type`, `status`) | WARN |
+| V-DOC-GOV-03 | Doc filename uses a date-stamp suffix instead of the canonical `{concern-slug}.md` naming (ADR files exempt) | WARN |
+| V-DOC-GOV-04 | Doc content substantially replaced without `supersedes:` link or `status: deprecated` on the prior version | WARN |
 | V-CONFIG-01 | New config/env keys follow established naming, registered | WARN |
 | V-SCOPE-01 | No refactoring untouched code | WARN |
 | V-SCOPE-02 | Touch-Paths violation — files modified outside plan scope | WARN |
@@ -45,6 +53,8 @@ longer definitions (token cost, drift). Persist every finding to
 | V-GIT-01 | PR created without Closes #N issue linkage in description | BLOCK |
 | V-MERGE-01 | drift-reconciled merge with merged_by:blackhole present — step 0 bypassed | BLOCK |
 | V-MERGE-02 | drift-reconciled merge with merged_by absent — external bypass of hold/merge_after | WARN |
+| V-HUNT-01 | Kaizen issue filed from a finding without a `CONFIRMED` verification pass | BLOCK |
+| V-HUNT-02 | Hunt wave filed more than `max_issues_per_wave` issues, or filed below `min_priority` | WARN |
 
 **BLOCK** = must fix before merge (or escalate to user with justification).
 **WARN** = fix or document deferral in PR and ledger.

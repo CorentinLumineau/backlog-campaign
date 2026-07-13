@@ -93,6 +93,20 @@ security-mode trigger (`review-core.md` § Security-mode review, `phase-review.m
 today's live queue still falls through the "void route" fallback and dispatches exactly as
 it did before ADR-004, only because none has re-entered Handle since #118 merged.
 
+**Route backfill (ADR-006 rollout)**: to populate `route{}` on the standing queue so the
+dashboard's Routing section (`coordinator-dashboard.md` § Dashboard sections) renders real
+classifications, spawn `router` with `trigger: "initial"` for each in-scope issue.
+**Scope**: issues with `route` absent AND `status` ∉ {`in-flight`, `merged`, `closed`} AND
+`phase != done` (a populated route for finished work adds dashboard rows with no display
+value). **Safety** (no `queue.json` lock strategy — see `blackhole-state.md` § Write protocol):
+run the backfill **sequentially**, one `router` spawn at a time, **never** parallel-batched with
+regular Ready-set worker spawns; skipping `in-flight` avoids a concurrent-write collision with an
+active worker mutating the same issue entry. Backfilling a route is **display-only** — it never
+re-evaluates an already-executed dispatch decision (`orchestrator.md` § Route-derived dispatch
+reads `route{}` once, immediately before spawning `planner`; issues already past `phase: plan`
+are unaffected). One-time backfill, run before that turn's Step 2 Ready-set computation. The
+`route` object schema table above is unchanged (frozen per `router.md` § Schema reference).
+
 ### Status transitions
 
 ```

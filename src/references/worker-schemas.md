@@ -244,6 +244,9 @@ of a blind `implementer` re-spawn.
 See `implementer.md` § Bugfix Gate for the Scout Check / Improvement Record convention the same
 gate also produces (content spec stays there — `V-DRY`).
 
+See `implementer.md` § Reuse Check Gate for the unconditional `Reuse Check:` PR-body entry every
+implementer session produces (verified by `reviewer.md` § 5 — content spec stays there, `V-DRY`).
+
 ## Reviewer (`reviewer`)
 
 ```json

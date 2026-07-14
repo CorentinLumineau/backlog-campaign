@@ -1,5 +1,5 @@
 ---
-name: create-release
+name: prj-create-release
 description: >-
   Cut a new backlog-campaign GitHub release. Use when asked to create a release,
   cut vX.Y.Z, publish release notes, or tag a version.
@@ -41,7 +41,7 @@ CI reads `.github/releases/${TAG}.md` when the file exists; otherwise falls back
    ever done manually, use `bun run build --all` (not plain `bun run build`), which misses the
    gemini and `plugins/blackhole` targets.
 3. **Edit notes** — `.github/releases/vX.Y.Z.md`
-   - Use [TEMPLATE.md](../../releases/TEMPLATE.md) and the prior release as reference
+   - Use [TEMPLATE.md](../../../.github/releases/TEMPLATE.md) and the prior release as reference
    - **v0.1.0** (first release only): full product overview — goal, flow, agents, install
    - **v0.2.0+** (minor/patch): **diff-focused** — only `### ✨ What's new in vX.Y.Z` with categorized changes since the previous tag; link to v0.1.0 + README for full overview
    - Never mention external projects
@@ -87,7 +87,7 @@ git push origin vX.Y.Z
 ## References
 
 - [Release checklist](references/checklist.md)
-- [Release workflow](../../workflows/release.yml)
+- [Release workflow](../../../.github/workflows/release.yml)
 - [README install section](../../../README.md#-installation-paths)
 
 ## Never

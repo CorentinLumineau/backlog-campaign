@@ -18,9 +18,9 @@ Committed template: `.blackhole/config.json`
   "scope_labels": ["blackhole/backlog", "size:m"],
   "auto_sync": true,
   "adaptive_routing": true,
-  "router_confidence_thresholds": { "split": 70, "design": 70, "plan_mode": 70, "security": 70, "docs": 70 },
+  "router_confidence_thresholds": { "split": 70, "design": 70, "plan_mode": 70, "security": 70, "docs": 70, "analysis": 70 },
   "docs_governance": { "enabled": true, "companion_files": true, "docs_impact_routing": true, "write_governance": true, "severity_overrides": {} },
-  "kaizen": { "enabled": false, "kinds": ["quickwins", "best-practices", "coverage", "refactor", "bug"], "trigger": "on-empty", "loop_interval": 5, "min_priority": 30, "max_issues_per_wave": 10, "max_waves": 6 },
+  "kaizen": { "enabled": false, "kinds": ["quickwins", "best-practices", "coverage", "refactor", "bug", "retrospective"], "trigger": "on-empty", "loop_interval": 5, "min_priority": 30, "max_issues_per_wave": 10, "max_waves": 6 },
   "incident_mode": { "enabled": false, "parallel_max_override": 1, "pause_discovery": true },
   "autonomy": { "enabled": false, "confidence_threshold": 80, "design_dominance_delta": 30, "design_autonomy": true, "analyze_routing": true, "brainstorm_routing": true, "never_bypass": ["destructive", "credentials", "epic-go-no-go"] },
   "worker_model_policy": "cost-optimized",
@@ -43,7 +43,7 @@ Committed template: `.blackhole/config.json`
 | `scope_labels` | no | When set, issue must have **all** listed labels (AND). Empty array treated as unset |
 | `auto_sync` | no | When `true` (default), forge reconcile runs automatically |
 | `adaptive_routing` | no | Emergency kill switch for ADR-004 router-agent routing (default `true`); when `false`, routing is inert regardless of `route` presence in `queue.json` |
-| `router_confidence_thresholds` | no | Per-flag confidence thresholds keyed by `split`, `design`, `plan_mode`, `security`, `docs` (matches `route.confidence` keys); each defaults to `70` when absent |
+| `router_confidence_thresholds` | no | Per-flag confidence thresholds keyed by `split`, `design`, `plan_mode`, `security`, `docs`, `analysis` (matches `route.confidence` keys); each defaults to `70` when absent. The `analysis` threshold alone does not turn on `needs_analysis` dispatch — that is additionally gated by `autonomy.enabled && autonomy.analyze_routing` (see below) |
 | `docs_governance` | no | Nested object of flags/thresholds for companion-file, docs-impact-routing, and write-governance features (`enabled`, `companion_files`, `docs_impact_routing`, `write_governance`, `severity_overrides`); absent block = current behavior preserved (all three sub-flags gate live features — see rows below) |
 | `docs_governance.enabled` | no | Emergency kill switch for the whole `docs_governance` block (default `true`); when `false`, every dependent feature is inert regardless of sub-field values |
 | `docs_governance.companion_files` | no | Gates the V-ADA companion-file reviewer audit (default `true`); when `false`, that audit is inert regardless of `enabled` — live consumers: `src/agents/reviewer.md` § 10 "Companion-File Audit (`V-ADA-01/02/03/05/06/07`)", config-gated at `reviewer.md:69`, and `src/SKILL.md` Phase 0 step 2 "Companion-file scaffold", config-gated at `SKILL.md:42` |
@@ -52,7 +52,7 @@ Committed template: `.blackhole/config.json`
 | `docs_governance.severity_overrides` | no | Map of V-code → `BLOCK`\|`WARN`, keyed by docs-governance V-code; empty/absent = defaults apply. May only escalate a WARN-default docs-governance code to BLOCK — must never de-escalate the pre-existing `V-DOC-02`/`V-DOC-04` BLOCK severity |
 | `kaizen` | no | Nested object gating the kaizen improvement-hunt loop (ADR-006): `enabled`, `kinds`, `trigger`, `loop_interval`, `min_priority`, `max_issues_per_wave`, `max_waves`; absent block = current behavior preserved (hunting is opt-in, see contract note below) |
 | `kaizen.enabled` | no | Kill switch for the whole `kaizen` block (default `false` — hunting is opt-in, unlike `docs_governance` which defaults `true`); when `false`, hunt dispatch never fires regardless of sub-field values |
-| `kaizen.kinds` | no | Array of hunt territory kinds to scan (default `["quickwins", "best-practices", "coverage", "refactor", "bug"]`) |
+| `kaizen.kinds` | no | Array of hunt territory kinds to scan (default `["quickwins", "best-practices", "coverage", "refactor", "bug", "retrospective"]`); `retrospective` is included by default whenever `kaizen.enabled: true` |
 | `kaizen.trigger` | no | `on-empty` \| `every-n-loops` \| `manual` (default `on-empty`) — when the Phase-5 loop dispatches a hunt wave |
 | `kaizen.loop_interval` | no | Number of Phase-5 loop iterations between hunt waves when `trigger: every-n-loops` (default `5`) |
 | `kaizen.min_priority` | no | Minimum `Priority = Gain * (11 - Effort)` a finding must clear to be filed as an issue (default `30`, matching the `V-PARETO-02` BLOCK floor); may only be **raised** above `30`, never lowered below the `V-PARETO-02` threshold |

@@ -10,7 +10,9 @@ on:
 jobs:
   verify:
     name: Protocol Conformance
-    runs-on: [self-hosted, mba]
+    # pull_request runs attacker-controllable fork code — never schedule it on the self-hosted
+    # runner (public repo). Trusted push/tag events keep the self-hosted MacBook runner.
+    runs-on: ${{ github.event_name == 'pull_request' && fromJSON('["ubuntu-latest"]') || fromJSON('["self-hosted", "mba"]') }}
 
     steps:
       - name: Checkout repository

@@ -143,7 +143,25 @@ function validateInput(input: DesignAggregateInput): string | null {
   }
   for (const [i, critic] of input.critics.entries()) {
     if (!isCriticScore(critic)) {
-      return `critic ${i} has an invalid shape (expected { per_option_scores, findings }))`;
+      return `critic ${i} has an invalid shape (expected { per_option_scores, findings })`;
+    }
+  }
+
+  // Every scorer must score every weights column for every option — a missing column would
+  // otherwise silently score as 0 in weightedTotal and can flip the verdict (fail-safe: block).
+  const weightColumns = Object.keys(input.weights);
+  const scorers: Array<[string, Record<string, ColumnScore>]> = [
+    ['primary', input.primary.per_option_scores],
+    ['critic 0', input.critics[0].per_option_scores],
+    ['critic 1', input.critics[1].per_option_scores],
+  ];
+  for (const [scorer, perOptionScores] of scorers) {
+    for (const [option, columnScore] of Object.entries(perOptionScores)) {
+      for (const column of weightColumns) {
+        if (!(column in columnScore)) {
+          return `${scorer} is missing weights column "${column}" for option "${option}"`;
+        }
+      }
     }
   }
 

@@ -281,6 +281,59 @@ describe('aggregateDesign — malformed/missing input (fail-safe default)', () =
     expect(result.status).toBe('blocked');
     expect(result.reasons).toEqual(['malformed-input']);
   });
+
+  // Regression: a missing rubric column must never silently score as 0 — omitting one column
+  // for the runner-up used to flip the verdict from blocked to ready with the wrong winner.
+  test('primary omits a weights column for one option → blocked, not a silent 0 score', () => {
+    const multiWeights: ColumnWeights = { Simplicity: 30, Performance: 30, Maintainability: 40 };
+    const complete: Record<string, ColumnScore> = {
+      'Option A': { Simplicity: 4, Performance: 4, Maintainability: 3 },
+      'Option B': { Simplicity: 3, Performance: 3, Maintainability: 5 },
+    };
+    const missingColumn: Record<string, ColumnScore> = {
+      ...complete,
+      'Option B': { Simplicity: 3, Performance: 3 }, // Maintainability omitted
+    };
+    const result = aggregateDesign(
+      baseInput({
+        weights: multiWeights,
+        primary: basePrimaryInput({ per_option_scores: missingColumn }),
+        critics: [
+          baseCriticScore({ per_option_scores: complete }),
+          baseCriticScore({ per_option_scores: complete }),
+        ],
+      }),
+    );
+    expect(result.status).toBe('blocked');
+    expect(result.reasons).toEqual(['malformed-input']);
+    expect(result.detail).toMatch(/Maintainability/);
+  });
+
+  test('a critic omits a weights column for one option → blocked, fail-safe default', () => {
+    const multiWeights: ColumnWeights = { Simplicity: 50, Risk: 50 };
+    const complete: Record<string, ColumnScore> = {
+      'Option A': { Simplicity: 5, Risk: 4 },
+      'Option B': { Simplicity: 3, Risk: 3 },
+    };
+    const result = aggregateDesign(
+      baseInput({
+        weights: multiWeights,
+        primary: basePrimaryInput({ per_option_scores: complete }),
+        critics: [
+          baseCriticScore({ per_option_scores: complete }),
+          baseCriticScore({
+            per_option_scores: {
+              ...complete,
+              'Option A': { Simplicity: 5 }, // Risk omitted
+            },
+          }),
+        ],
+      }),
+    );
+    expect(result.status).toBe('blocked');
+    expect(result.reasons).toEqual(['malformed-input']);
+    expect(result.detail).toMatch(/Risk/);
+  });
 });
 
 describe('aggregateDesign — scorer_results shape', () => {

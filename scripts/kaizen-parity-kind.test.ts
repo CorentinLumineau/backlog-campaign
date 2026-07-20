@@ -43,10 +43,11 @@ describe('src/agents/hunter.md — parity kind registration', () => {
   const hunter = read('src/agents/hunter.md');
 
   test('inline kind-example list contains `parity`', () => {
-    const lines = hunter.split('\n');
-    const kindListLine = lines.find((l) => l.includes('kaizen.kinds') && l.includes('e.g.'));
-    expect(kindListLine).toBeDefined();
-    expect(kindListLine).toContain('`parity`');
+    // The `e.g. \`quickwins\`, ...` list wraps across two markdown source lines (one prose
+    // paragraph) — match the paragraph as a block rather than a single physical line.
+    const paragraphMatch = hunter.match(/kaizen\.kinds.*?e\.g\.[\s\S]*?\)\s*is set by an explicit/);
+    expect(paragraphMatch).not.toBeNull();
+    expect(paragraphMatch![0]).toContain('`parity`');
   });
 });
 

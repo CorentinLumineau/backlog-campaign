@@ -4,6 +4,7 @@
   "status": "active",
   "created": "2026-07-20T00:00:00Z",
   "lastUpdated": "2026-07-20T00:00:00Z",
+  "currentMilestone": "M1",
   "executionMode": "mercure-initiative",
   "goal": "blackhole as autonomous mercure over a shared artifact substrate: same code quality, interrupts only when needed, decisions banked durably for future implementations",
   "sources": [
@@ -32,10 +33,11 @@
       "title": "ADR-011 \u2014 implement-time accretion control",
       "wave": 1,
       "dependsOn": [],
-      "status": "pending",
+      "status": "completed",
       "tasksTotal": 6,
-      "tasksComplete": 0,
+      "tasksComplete": 6,
       "file": "documentation/milestones/_active/companion-substrate-closure/milestone-0.md",
+      "mergedCommit": "54d08f4",
       "summary": "Reuse aperture split + rule-of-three, Scout/defer by scope, pointer retargeting, parity-audit + ADR-008 housekeeping",
       "planStatus": "planned"
     },

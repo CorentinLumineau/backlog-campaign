@@ -7,7 +7,7 @@
   agent) → review → green `bun run verify` + `bun run build` + `bun test` → merge to main → next.
 - Run as a **mercure initiative, NOT a blackhole self-campaign** (milestones edit blackhole's own
   agent contracts; a self-campaign would review changes to its own contract).
-- Currently: starting **CSC-M0**.
+- Currently: **CSC-M0 merged to main (54d08f4)**; starting **CSC-M1**.
 
 ## Green baseline (main @ 22a84bb)
 - `bun run verify` → 28/28
@@ -16,8 +16,8 @@
 This is the regression gate for every milestone.
 
 ## Execution order (task IDs in TaskList)
-1. CSC-M0 accretion control (wave1)      ← in progress
-2. CSC-M1 schema precedence (wave1)
+1. CSC-M0 accretion control (wave1)      ✅ merged 54d08f4
+2. CSC-M1 schema precedence (wave1)       ← in progress
 3. CSC-M4 decision memory (wave1)
 4. CSC-M2 promotion path (needs M1)
 5. CSC-M3 Active Constraints (needs M2)
@@ -32,7 +32,10 @@ This is the regression gate for every milestone.
 - MPP-M6 first matrix-driven backlog sweep — runs prj-mercure-sync live; files real GitHub issues.
 
 ## Completed Milestones
-(none yet)
+- **CSC-M0** (ADR-011 accretion control) — merged `54d08f4`. reviewer.md §5 3-form Reuse Check
+  tolerance + negative-claim BLOCK spot-check + Improvement Record WARN; implementer.md aperture
+  split (repo-wide existence vs neighbourhood convention) + rule-of-three; Scout Check consolidated
+  to one unconditional section; ADR-008 flipped Accepted. Gate: verify 28/28, build clean, tests 490/0.
 
 ## Failed Approaches
 (none yet)

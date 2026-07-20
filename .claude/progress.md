@@ -7,7 +7,7 @@
   agent) → review → green `bun run verify` + `bun run build` + `bun test` → merge to main → next.
 - Run as a **mercure initiative, NOT a blackhole self-campaign** (milestones edit blackhole's own
   agent contracts; a self-campaign would review changes to its own contract).
-- Currently: companion done; **MPP-M1, M2, M3 merged**; starting **MPP-M4** (wave 3; then M5).
+- Currently: companion done; **MPP-M1, M2, M3, M4 merged**; starting **MPP-M5** (LAST autonomous milestone).
 
 ## Green baseline (main @ 22a84bb)
 - `bun run verify` → 28/28
@@ -24,8 +24,8 @@ This is the regression gate for every milestone.
 6. MPP-M1 sync/Lens v2 (wave1)            ✅ merged 8d0842b
 7. MPP-M2 matrix seed (needs M1)          ✅ merged 3a87aba
 8. MPP-M3 threat/perf (needs M2)          ✅ merged bf875a4
-9. MPP-M4 merge/delivery hardening (needs M2)  ← in progress
-10. MPP-M5 parity hunt kind (needs M2)
+9. MPP-M4 merge/delivery hardening (needs M2)  ✅ merged a808875
+10. MPP-M5 parity hunt kind (needs M2)         ← in progress
 
 ## Deferred (gated — hand to user)
 - CSC-M5 autonomy.enabled flip — BREAKING; needs a real green campaign + human T3 sign-off.
@@ -77,6 +77,11 @@ This is the regression gate for every milestone.
   conditional Standard-track planner sections (## Threat Model STRIDE, ## Performance Budget), reviewer
   §16/§17 audits (plan-section-conditional). NOTE: plan said §15/§16 but §15 was taken by CSC-M4, so
   landed as §16/§17. 5 tracks + V-DESIGN preserved. Gate: verify 29/29, build clean, tests 522/0.
+- **MPP-M4** (ADR-013 GAP-2/3/8 merge/delivery hardening) — merged `a808875`. GAP-2 spec-drift-at-merge
+  check (review-core.md § Recheck + reviewer §13, paired); GAP-3 delivery-boundary evidence in
+  implementer.md Verification Evidence Gate (V-GATE-01 markers intact); GAP-8 BLOCKING acceptance-criteria
+  gate in planner (implements documented ac_mapping, Standard track only). No new V-code. Gate: verify
+  29/29, build clean, tests 522/0.
 
 ## Failed Approaches
 (none yet)

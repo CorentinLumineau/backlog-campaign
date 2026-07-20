@@ -1,8 +1,27 @@
 {
   "version": "3.0",
-  "focus": null,
-  "lastUpdated": "2026-07-16T00:00:00Z",
-  "initiatives": [],
+  "focus": "companion-substrate-closure",
+  "lastUpdated": "2026-07-20T00:00:00Z",
+  "initiatives": [
+    {
+      "name": "companion-substrate-closure",
+      "displayName": "Companion Substrate Closure (ADR-011 + ADR-012): implement-time accretion control + durable artifact substrate",
+      "priority": 1,
+      "status": "active",
+      "dependsOn": [],
+      "relatedTo": [
+        "documentation/decisions/ADR-011-implement-time-accretion-control.md",
+        "documentation/decisions/ADR-012-shared-artifact-substrate.md",
+        "documentation/milestones/_active/companion-substrate-closure/README.md"
+      ],
+      "blockedBy": [],
+      "created": "2026-07-20T00:00:00Z",
+      "milestonesTotal": 6,
+      "milestonesComplete": 0,
+      "currentMilestone": null,
+      "note": "Execution mode: mercure initiative (NOT a blackhole self-campaign) \u2014 M0 modifies implementer.md/reviewer.md, so a self-hosted run would have the reviewer review a change to its own contract."
+    }
+  ],
   "archived": [
     {
       "name": "autonomous-thinking-routes",
@@ -10,7 +29,10 @@
       "priority": 1,
       "status": "archived",
       "dependsOn": [],
-      "relatedTo": ["documentation/decisions/ADR-010-autonomous-thinking-routes.md", "documentation/audits/autonomous-workflow-parity.md"],
+      "relatedTo": [
+        "documentation/decisions/ADR-010-autonomous-thinking-routes.md",
+        "documentation/audits/autonomous-workflow-parity.md"
+      ],
       "blockedBy": [],
       "created": "2026-07-15T00:00:00Z",
       "archivedAt": "2026-07-16T00:00:00Z",

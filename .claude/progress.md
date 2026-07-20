@@ -7,7 +7,7 @@
   agent) → review → green `bun run verify` + `bun run build` + `bun test` → merge to main → next.
 - Run as a **mercure initiative, NOT a blackhole self-campaign** (milestones edit blackhole's own
   agent contracts; a self-campaign would review changes to its own contract).
-- Currently: **CSC-M0, M1 merged**; starting **CSC-M4**.
+- Currently: **CSC-M0, M1, M4 merged** (wave 1 done); starting **CSC-M2** (wave 2).
 
 ## Green baseline (main @ 22a84bb)
 - `bun run verify` → 28/28
@@ -18,8 +18,8 @@ This is the regression gate for every milestone.
 ## Execution order (task IDs in TaskList)
 1. CSC-M0 accretion control (wave1)      ✅ merged 54d08f4
 2. CSC-M1 schema precedence (wave1)       ✅ merged eed17e5
-3. CSC-M4 decision memory (wave1)         ← in progress
-4. CSC-M2 promotion path (needs M1)
+3. CSC-M4 decision memory (wave1)         ✅ merged 1fb772e
+4. CSC-M2 promotion path (needs M1)       ← in progress
 5. CSC-M3 Active Constraints (needs M2)
 6. MPP-M1 sync/Lens v2 (wave1)
 7. MPP-M2 matrix seed (needs M1)
@@ -41,6 +41,15 @@ This is the regression gate for every milestone.
   Repo Convention Precedence extended to both layers citing the script as SSOT; planner.md/artifact-contract.md
   emitters + reviewer.md V-ADA-02/SKILL.md F-DOCS-01 auditors accept either schema. Counts held (28/46).
   Gate: verify 28/28, build clean, tests 502/0.
+- **CSC-M4** (ADR-012 E4 decision memory) — merged `1fb772e`. `decision_records[]` schema+validator
+  (TDD), worker-schemas.md subsection, implementer.md emission at 4 gates, NEW orchestrator
+  `## Decision Record Append` section (12/50 LOC; barrier grandfathered 46 LOC untouched), new
+  `documentation/reference/decision-log.md`, reviewer §15 audit. Single-writer preserved (impl never
+  writes the log). verify.test.ts allowlist updated for the new section (keeps loud-fail). Counts held
+  (28/46). Gate: verify 28/28, build clean, tests 509/0.
+  NOTE: orchestrator.md non-baseline section allowlist in scripts/verify.test.ts now lists
+  `## Decision Record Append` + `## Design Autonomy Dispatch`; M2's new resume-dispatch section must
+  be ADDED to that exact-list assertion (file order).
 
 ## Failed Approaches
 (none yet)

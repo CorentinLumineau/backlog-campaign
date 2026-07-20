@@ -485,13 +485,16 @@ describe('checkContentGate integration (real orchestrator.md, zero false positiv
     // checked above via findContentGateViolations rather than forbidden outright — ADR-010 M2's
     // "## Design Autonomy Dispatch" was the first such addition; companion-substrate-closure M4
     // Task 4 (ADR-012 E4) adds "## Decision Record Append" as the second, placed immediately
-    // after the grandfathered barrier section it back-points to. Assert the non-baseline set is
-    // exactly the expected new-section allowlist, so an unexpected/undocumented new `##` header
-    // still fails loudly here even though it would pass the budget check above.
+    // after the grandfathered barrier section it back-points to. companion-substrate-closure M2
+    // Task 2 (ADR-012 E2.3) adds "## Design-Approval Resume Dispatch" as the third, placed
+    // immediately after "## Design Autonomy Dispatch" (the section it back-points to). Assert the
+    // non-baseline set is exactly the expected new-section allowlist, so an unexpected/undocumented
+    // new `##` header still fails loudly here even though it would pass the budget check above.
     const nonBaselineSections = Object.keys(sections).filter((h) => !(h in ORCHESTRATOR_CONTENT_GATE_BASELINE));
     expect(nonBaselineSections).toEqual([
       '## Decision Record Append (decision-log.md)',
       '## Design Autonomy Dispatch (ADR-010 D4)',
+      '## Design-Approval Resume Dispatch (ADR-012 E2.3)',
     ]);
   });
 });

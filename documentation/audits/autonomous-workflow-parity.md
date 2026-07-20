@@ -170,7 +170,7 @@ blackhole's current machinery:
 | APEX Analyze | Nothing per-issue (router security grep only) | **Missing** (G1) |
 | APEX Design | Design track — human-blocked, ephemeral artifact | **Gated + ephemeral** (G2, G3) |
 | APEX Plan | Planner quick/full/skip tracks, Pareto gate | Parity (minus STRIDE/Perf/API sections — G10) |
-| APEX Implement | Implementer, TDD, worktrees, execution modes | Parity (delivery-boundary hardening — G7) |
+| APEX Implement | Implementer, TDD, worktrees, execution modes | Parity (delivery-boundary hardening — G7; implement-side accretion gap addressed by ADR-011 D1/D2) |
 | APEX Review | Reviewer + deterministic aggregate + iteration budget | Parity+ (spec-drift tightening — G6) |
 | APEX Commit | Merge gate (`mergeEligible()`, V-GIT-01) | Parity |
 | ONESHOT (x-fix → commit) | `plan_mode: skip` + Bugfix Gate (V-FIX-01 root-cause record) | Parity |
@@ -183,11 +183,15 @@ blackhole's current machinery:
 | x-docs | `docs-only` execution mode + doc-governance rules | Partial — write-governance exists, artifact routing doesn't (G3) |
 | x-initiative (multi-milestone) | Epics + DAG + splits + PO sign-off | Rough parity — sign-off gate becomes confidence-gated (G4) |
 
-Reading of the matrix: **implement-side workflows (fix, refactor, docs, hunt, review, commit)
-are already at parity; every gap is on the thinking side** (analyze, design, brainstorm,
-rearchitect) plus the shared artifact-durability and gate-policy defects. The port is
-therefore not "add 74 skills" — it is four thinking routes, one artifact contract, and one
-confidence-based gate policy applied uniformly.
+Reading of the matrix: **two axes are real and independent, and neither supersedes the
+other.** The product/design-fit axis (G1–G11: analyze, design, brainstorm, rearchitect, plus
+the shared artifact-durability and gate-policy defects) is addressed by ADR-010's thinking
+routes. The implement-side axis — accretion at the point of writing code, not merely at
+delivery boundaries — is addressed separately by ADR-011 D1/D2 (Finding 1: the Reuse Check
+aperture was wrong for the repo-wide existence question; Finding 2: Scout Check was split from
+deferral by execution mode instead of by diff scope). The port is therefore not "add 74
+skills" — it is four thinking routes, one artifact contract, one confidence-based gate policy,
+and — per ADR-011 — a corrected implement-time reuse/scout mechanism, applied uniformly.
 
 ## 3. What mercure already provides for the port
 

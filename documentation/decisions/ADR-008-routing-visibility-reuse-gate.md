@@ -2,7 +2,7 @@
 type: adr
 status: current
 created: 2026-07-13
-last_updated: 2026-07-13
+last_updated: 2026-07-20
 review_trigger: "on ADR acceptance"
 related:
   - documentation/audits/analysis-blackhole-routing-reuse-visibility.md
@@ -13,7 +13,7 @@ supersedes:
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -70,6 +70,14 @@ Adopt **Option 2 — Observe + shift-left into the implementer**. Two decoupled 
 **B. Proactive reuse (contract change).** Shift reuse detection left into the implementer using the
 codebase's proven PR-artifact gate pattern (Bugfix-Gate Decision Record / docs-only Drift-Check
 Table):
+
+> **Aperture superseded by ADR-011 D1**: the single `touch_paths` grep described below was later
+> found to conflate two distinct questions (does the concern exist *anywhere*, vs. what is the
+> *local* idiom) — ADR-011 D1 splits it into a repo-wide existence search and an unchanged
+> neighbourhood convention search, plus a rule-of-three duplication threshold. This section's
+> original text is left intact below for the historical record; `implementer.md` § Reuse Check
+> Gate is the current authoritative behavior.
+
 - `implementer.md` gains a **Reuse Check** step: before writing, grep the issue's `touch_paths` for
   existing utilities/conventions and record a one-line **Reuse Check** entry in the PR body.
 - `reviewer.md` § 5 gains two obligations: **verify** the Reuse Check artifact is present, and run

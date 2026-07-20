@@ -7,8 +7,7 @@
   agent) → review → green `bun run verify` + `bun run build` + `bun test` → merge to main → next.
 - Run as a **mercure initiative, NOT a blackhole self-campaign** (milestones edit blackhole's own
   agent contracts; a self-campaign would review changes to its own contract).
-- Currently: **companion-substrate-closure autonomous scope COMPLETE** (M0,M1,M4,M2,M3 merged; M5
-  deferred). Focus switched to **mercure-parity-program**; starting **MPP-M1**.
+- Currently: companion done; **MPP-M1 merged**; starting **MPP-M2** (matrix seed, needs M1).
 
 ## Green baseline (main @ 22a84bb)
 - `bun run verify` → 28/28
@@ -22,8 +21,8 @@ This is the regression gate for every milestone.
 3. CSC-M4 decision memory (wave1)         ✅ merged 1fb772e
 4. CSC-M2 promotion path (needs M1)       ✅ merged 8f13aef
 5. CSC-M3 Active Constraints (needs M2)   ✅ merged 48581f4
-6. MPP-M1 sync/Lens v2 (wave1)            ← in progress
-7. MPP-M2 matrix seed (needs M1)
+6. MPP-M1 sync/Lens v2 (wave1)            ✅ merged 8d0842b
+7. MPP-M2 matrix seed (needs M1)          ← in progress
 8. MPP-M3 threat/perf (needs M2)
 9. MPP-M4 merge/delivery hardening (needs M2)
 10. MPP-M5 parity hunt kind (needs M2)
@@ -63,6 +62,11 @@ This is the regression gate for every milestone.
   "seeds", reachable from Quick track) seeds from analyze notes with `(analyze: issue #N)` attribution
   + dedup. V-DESIGN markers intact, counts held. Gate: verify 28/28, build clean, tests 509/0.
   → **companion-substrate-closure autonomous scope COMPLETE (5/6; M5 deferred).**
+- **MPP-M1** (ADR-013 D2/D3 sync/Lens v2) — merged `8d0842b`. Rewrote `.claude/skills/prj-mercure-sync/SKILL.md`
+  (edited directly — prj-* exempt from src build): tiered Adoption Lens v2 (ADOPT/ADAPT-async/N/A), exactly
+  2 hard rejections, Release/Backlog dual-mode workflow. New `scripts/checks/parity-matrix.check.ts` +12-case
+  TDD test (V-PMATRIX-01, file-absent SKIP until M2 seeds the matrix). **EXPECTED_CHECK_COUNT 28→29**;
+  VCODE_TABLE_ROW_COUNT held 46. Gate: verify 29/29 (V-PMATRIX-01 green), build byte-identical, tests 521/0.
 
 ## Failed Approaches
 (none yet)

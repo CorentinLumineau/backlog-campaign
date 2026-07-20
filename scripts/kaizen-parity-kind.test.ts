@@ -70,9 +70,17 @@ describe('src/references/hunt/parity.md — kind reference file', () => {
   test('calibration table never assigns severity BLOCK', () => {
     const content = read(filePath);
 
-    const tableMatch = content.match(/## Calibration table\n([\s\S]*?)(\n## |$)/);
-    expect(tableMatch).not.toBeNull();
-    const tableSection = tableMatch![1];
-    expect(tableSection).not.toContain('BLOCK');
+    const sectionMatch = content.match(/## Calibration table\n([\s\S]*?)(\n## |$)/);
+    expect(sectionMatch).not.toBeNull();
+    // Scope strictly to `|`-prefixed table rows — the prose surrounding the table may
+    // legitimately discuss the word "BLOCK" (e.g. explaining this kind never assigns it);
+    // only the table's own Severity range column values are the assertion's target.
+    const tableRows = sectionMatch![1]
+      .split('\n')
+      .filter((line) => line.trim().startsWith('|'));
+    expect(tableRows.length).toBeGreaterThan(0);
+    for (const row of tableRows) {
+      expect(row).not.toContain('BLOCK');
+    }
   });
 });

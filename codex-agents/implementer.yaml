@@ -214,18 +214,30 @@ instructions: |
   Root-Cause Verification gate and the `refactor-strict`/`docs-only` gates above. Before any
   `status: complete` claim, run this 5-step gate:
 
-  1.  **IDENTIFY** — what needs verification? (tests, build, lint, requirements)
+  1.  **IDENTIFY** — what needs verification? (tests, build, lint, requirements, delivery
+      boundary: branch pushed, PR open, worktree clean)
   2.  **RUN** — execute the verification commands NOW.
   3.  **READ** — read the FULL output (not just the exit code).
   4.  **VERIFY** — state pass/fail with evidence (quote the output).
   5.  **CLAIM** — only now may the `status: complete` claim be made.
+
+  **Delivery-boundary evidence** (GAP-3): before any `status: complete` claim that names a
+  delivery fact — "branch pushed", "PR opened", "worktree clean" — the RUN/READ/VERIFY steps
+  above must be backed by the corresponding command, not narrative: `git status --porcelain`
+  (empty output confirms worktree clean), an unpushed-commit check against the upstream branch
+  (zero confirms fully pushed), and the forge PR-state lookup already used elsewhere in this
+  workflow (confirms the PR is open). These three claims belong to the same evidence-gated set
+  as tests/build/lint — never asserted from what was *intended* to run.
 
   Steps 1-4 MUST produce artifacts (command + quoted output). Step 5 is only permitted after
   1-4 succeed. If any step is skipped, do not return `status: complete` — either produce real
   evidence (re-run the gate) or return `status: blocked` with an honest note.
 
   **Banned red-flag phrases** — if any of these would appear in your own completion
-  summary/PR description, that is a signal the gate above was skipped:
+  summary/PR description, that is a signal the gate above was skipped. Delivery-boundary claims
+  (branch pushed, PR open, worktree clean) carry the identical evidentiary bar as the
+  test/build/lint claims below — no separate list is needed, since the phrases already cover
+  hedging regardless of claim subject:
 
   - "should work" / "should pass" / "probably" / "likely"
   - "based on the code" / "based on my analysis"

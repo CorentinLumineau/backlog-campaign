@@ -45,7 +45,7 @@ instructions: |
      * `V-KISS-01`: Keep the design minimal. Avoid premature abstractions.
      * `V-YAGNI-01`: No speculative features or unused generic classes.
   7. **Generate Plan Sections**: Write the plan file to `plans/<issue>.md`. Use the Marker Convention to highlight human-in-the-loop clarifications.
-  8. **Verify Quality Gate**: Ensure all Touch-Paths are declared explicitly (`V-SCOPE-02`) and schema baseline changes are fully specified (`V-API-01`).
+  8. **Verify Quality Gate**: Ensure all Touch-Paths are declared explicitly (`V-SCOPE-02`) and schema baseline changes are fully specified (`V-API-01`). **Standard track only** — additionally verify every `## Task Breakdown` item carries a machine-verifiable acceptance criterion (`ac_mapping`, `worker-schemas.md` § Plan quality gate checks): if any task lacks one, add `ac_mapping` to `failing_checks` and return `status: blocked` rather than `ready`. This closes a documented-but-unenforced schema value (`worker-schemas.md` § Plan quality gate checks names `ac_mapping` as a valid `failing_checks` entry with no prior producing step).
 
   ---
 
@@ -116,7 +116,10 @@ instructions: |
       consumption path (`V-DRY-01`: same data, new presentation). When not triggered, omit the
       section entirely, same discipline as Threat Model above.
   *   **Execution Strategy (Stop Conditions)**: Scoped risk-mitigation rules (e.g. "if schema generated migration lacks column X, abort").
-  *   **Sprint Contract**: Clear definition of done (e.g. all tests and linters pass).
+  *   **Sprint Contract**: Restates, in one place, the per-task acceptance criteria already
+      attached to each `## Task Breakdown` item (`— **AC**: <condition>`, see Plan Output File
+      Template below) — not a substitute for them. The blanket "all tests and linters pass"
+      phrasing remains valid only as the definition of done for tasks with no narrower AC.
 
   ### 3. Skip Track
 
@@ -379,11 +382,11 @@ instructions: |
   ...
 
   ## Task Breakdown
-  - [ ] **TDD Baseline Verification**: Run the project's test suite first to verify all existing tests pass before modifying any codebase files.
-  - [ ] **Write Failing Tests**: Author new unit/integration tests covering the feature/bug fix (`V-TEST-01/02`).
-  - [ ] **Implement Minimal Logic**: Implement code changes restricted strictly to the Touch-Paths.
-  - [ ] **Verify Integrity**: Verify all tests and lints are clean (use the project's test and lint commands).
-  - [ ] Task steps (with any [NEEDS CLARIFICATION: ...] markers if needed)
+  - [ ] **TDD Baseline Verification**: Run the project's test suite first to verify all existing tests pass before modifying any codebase files. — **AC**: baseline suite run, pass/fail counts quoted in the completion evidence.
+  - [ ] **Write Failing Tests**: Author new unit/integration tests covering the feature/bug fix (`V-TEST-01/02`). — **AC**: new tests exist and fail for the expected reason before implementation lands.
+  - [ ] **Implement Minimal Logic**: Implement code changes restricted strictly to the Touch-Paths. — **AC**: previously-failing tests now pass; no file outside Touch-Paths modified.
+  - [ ] **Verify Integrity**: Verify all tests and lints are clean (use the project's test and lint commands). — **AC**: full suite green, lint clean, both quoted in the completion evidence.
+  - [ ] Task steps (with any [NEEDS CLARIFICATION: ...] markers if needed) — **AC**: <machine-verifiable condition for this task; Standard track only, BLOCKING per Step 8's `ac_mapping` check>.
 
   ## Sprint Contract
   ...

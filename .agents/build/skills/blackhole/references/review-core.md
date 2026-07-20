@@ -162,6 +162,19 @@ already-named prior findings, not a fresh implementation.
 6. **LGTM interaction**: recheck mode's LGTM condition is unchanged from the definition above —
    it still requires all `recheck` entries `verdict: fixed` AND zero unresolved `BLOCK` rows in
    `findings`, not a separate weaker gate.
+7. **Independent spec-drift check (GAP-2 remedy, every recheck pass)**: in addition to the
+   fix-commit-scoped verification above, the reviewer performs one lightweight, full-diff
+   comparison of the PR's current cumulative state against the plan's Objective + Task
+   Breakdown — the same comparison `reviewer.md:51`'s Objective Fulfillment check performs on a
+   fresh full review. This is **not** a re-run of the full §§1-10 checklist, and **not** a
+   re-litigation of already-approved code quality/style findings outside the fix commits (rule 3
+   above is unchanged — this is a distinct axis: requirement satisfaction, not code quality).
+   Any requirement the cumulative diff no longer satisfies — including one a fix commit
+   inadvertently broke while resolving a *different* named finding — is reported as a normal
+   `findings` entry (no new V-code; reuses the uncoded Objective Fulfillment convention when no
+   more specific code applies), subject to the existing severity → action mapping and LGTM gate.
+   This is the one place in recheck mode that reads the whole diff, but only for spec/requirement
+   satisfaction — never for quality/style re-litigation.
 
 ## Reviewer prompt requirements
 

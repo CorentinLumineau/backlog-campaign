@@ -21,6 +21,11 @@ create a dated variant of this file; update it in place on every run.
 
 ## Coverage table
 
+> **Superseded by `documentation/audits/mercure-parity-matrix.md`** (ADR-013 D1, seeded
+> M2 of the mercure-parity-program initiative). This table is preserved for historical
+> reference only — do not add new rows here. Coverage status for every mercure mechanism now
+> lives in the matrix as `PM-NNN` rows; file gaps there, not here.
+
 Which mercure domains have been swept, and by what — including the two deep-dives that predate
 this skill and are folded in as Run 0.
 

@@ -4,7 +4,7 @@
   "status": "active",
   "created": "2026-07-20T00:00:00Z",
   "lastUpdated": "2026-07-20T00:00:00Z",
-  "currentMilestone": "M2",
+  "currentMilestone": "M3",
   "executionMode": "mercure-initiative",
   "goal": "blackhole as autonomous mercure over a shared artifact substrate: same code quality, interrupts only when needed, decisions banked durably for future implementations",
   "sources": [
@@ -74,10 +74,11 @@
       "dependsOn": [
         "M1"
       ],
-      "status": "pending",
+      "status": "completed",
       "tasksTotal": 4,
-      "tasksComplete": 0,
+      "tasksComplete": 4,
       "file": "documentation/milestones/_active/companion-substrate-closure/milestone-2.md",
+      "mergedCommit": "8f13aef",
       "summary": "Note-mismatch repair (fixes live bug), resume_context directive, planner 4.8 third branch",
       "planStatus": "planned"
     },

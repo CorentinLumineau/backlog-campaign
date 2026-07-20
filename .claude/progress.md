@@ -7,7 +7,7 @@
   agent) → review → green `bun run verify` + `bun run build` + `bun test` → merge to main → next.
 - Run as a **mercure initiative, NOT a blackhole self-campaign** (milestones edit blackhole's own
   agent contracts; a self-campaign would review changes to its own contract).
-- Currently: **CSC-M0, M1, M4 merged** (wave 1 done); starting **CSC-M2** (wave 2).
+- Currently: **CSC-M0, M1, M4, M2 merged**; starting **CSC-M3** (wave 3, last companion before gated M5).
 
 ## Green baseline (main @ 22a84bb)
 - `bun run verify` → 28/28
@@ -19,8 +19,8 @@ This is the regression gate for every milestone.
 1. CSC-M0 accretion control (wave1)      ✅ merged 54d08f4
 2. CSC-M1 schema precedence (wave1)       ✅ merged eed17e5
 3. CSC-M4 decision memory (wave1)         ✅ merged 1fb772e
-4. CSC-M2 promotion path (needs M1)       ← in progress
-5. CSC-M3 Active Constraints (needs M2)
+4. CSC-M2 promotion path (needs M1)       ✅ merged 8f13aef
+5. CSC-M3 Active Constraints (needs M2)   ← in progress
 6. MPP-M1 sync/Lens v2 (wave1)
 7. MPP-M2 matrix seed (needs M1)
 8. MPP-M3 threat/perf (needs M2)
@@ -50,6 +50,12 @@ This is the regression gate for every milestone.
   NOTE: orchestrator.md non-baseline section allowlist in scripts/verify.test.ts now lists
   `## Decision Record Append` + `## Design Autonomy Dispatch`; M2's new resume-dispatch section must
   be ADDED to that exact-list assertion (file order).
+- **CSC-M2** (ADR-012 E2 promotion path) — merged `8f13aef`. T1 repaired the live design-track-resume
+  bug (`awaiting-design-approval` now recognized in coordinator.md/queue-dag.md/SKILL.md); orchestrator
+  new `## Design-Approval Resume Dispatch` section (20 LOC); planner §4.8 third branch promotes a
+  human-approved design VERBATIM on `resume_context: design_approved` — never self-grades, never
+  re-invokes design-aggregate.ts. V-DESIGN-01/02 + V-CONTENTGATE-01 green; verify.test.ts allowlist now
+  lists 3 non-baseline sections. Counts held. Gate: verify 28/28, build clean, tests 509/0.
 
 ## Failed Approaches
 (none yet)

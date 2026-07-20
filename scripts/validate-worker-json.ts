@@ -20,6 +20,7 @@ const EXECUTION_MODES = ['standard', 'refactor-strict', 'docs-only'] as const;
 const SEVERITIES = ['BLOCK', 'WARN', 'INFO'] as const;
 const ROUTE_STATUSES = ['routed', 'error'] as const;
 const TASK_TYPES = ['feature', 'bugfix', 'refactor', 'docs'] as const;
+const DECISION_RECORD_KINDS = ['root-cause', 'approach', 'refactor', 'improvement', 'reuse'] as const;
 const ESCALATION_TRIGGERS = ['failed_attempts', 'touch_paths_overrun'] as const;
 const PLAN_MODES = ['skip', 'quick', 'full'] as const;
 const TRIGGERS = ['initial', 'clarify-resolved', 'research-landed', 'investigation-landed', 'analysis-landed'] as const;
@@ -134,6 +135,41 @@ function validateFindingsArray(value: unknown, path: string): string[] {
   }
   value.forEach((finding, index) => {
     errors.push(...validateFinding(finding, `${path}[${index}]`));
+  });
+  return errors;
+}
+
+function validateDecisionRecord(record: unknown, path: string): string[] {
+  const errors: string[] = [];
+
+  if (!isObject(record)) {
+    errors.push(`${path}: expected object`);
+    return errors;
+  }
+
+  requireField(errors, record, 'kind', isString, 'string');
+  if (isString(record.kind)) {
+    pushEnumError(errors, 'kind', record.kind, DECISION_RECORD_KINDS);
+  }
+  requireField(errors, record, 'touch_paths', isStringArray, 'string[]');
+  requireField(errors, record, 'decision', isNonEmptyString, 'non-empty string');
+  requireField(errors, record, 'why', isNonEmptyString, 'non-empty string');
+
+  if (!isNumber(record.pr) && !isNumber(record.issue)) {
+    errors.push('pr/issue: exactly one of pr or issue is required');
+  }
+
+  return errors.map((error) => `${path}.${error}`);
+}
+
+function validateDecisionRecordsArray(value: unknown, path: string): string[] {
+  const errors: string[] = [];
+  if (!Array.isArray(value)) {
+    errors.push(`${path}: expected array`);
+    return errors;
+  }
+  value.forEach((record, index) => {
+    errors.push(...validateDecisionRecord(record, `${path}[${index}]`));
   });
   return errors;
 }
@@ -302,6 +338,10 @@ function validateImplementer(data: unknown): string[] {
 
   if ('filed_issues' in data && data.filed_issues !== undefined && !isNumberArray(data.filed_issues)) {
     errors.push('filed_issues: expected number[]');
+  }
+
+  if ('decision_records' in data && data.decision_records !== undefined) {
+    errors.push(...validateDecisionRecordsArray(data.decision_records, 'decision_records'));
   }
 
   return errors;

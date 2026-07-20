@@ -90,6 +90,31 @@ instructions: |
       this route, planner gains zero new tracks). When no analysis note exists, fall back to
       independent codebase discovery, unchanged from current behavior.
   *   **Database/API Schema Changes**: Detailed schema baselines (`V-API-01`).
+  *   **Threat Model (`## Threat Model`, conditional)**: Trigger — the issue's resolved
+      `route.security_review_required` (post confidence-gate, the same value `review-core.md` §
+      Security-mode review already consumes) is `true`; when no `route` object exists (today's
+      queue), fall back to a content scan of the Touch-Paths for an auth/credentials/session/
+      token/injection-surface/network-boundary touchpoint — same route-first, content-fallback
+      pattern already used by Quick Track's Bugfix classification (see above) and Design Track
+      subsection 1 (see above), not a new heuristic shape (`V-INT-03`). When triggered, emit a
+      6-row STRIDE table (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of
+      Service, Elevation of Privilege), each row: threat description, severity
+      (`Critical`\|`High`\|`Medium`\|`Low`, mercure's four-tier vocabulary — this is the only place
+      blackhole authors that vocabulary; the V-code severities in `blackhole-vcodes.md` stay
+      two-tier), mitigation status (`Mitigated`\|`Accepted Risk`\|`Open`). When not triggered, omit
+      the section entirely — no `## Threat Model` heading, no placeholder — same
+      conditional-omission discipline as the Documentation Impact bullet above.
+  *   **Performance Budget (`## Performance Budget`, conditional)**: Trigger —
+      `plans/issue-N-analysis.md` exists (produced by `investigator`'s `analyze` sub-mode) **and**
+      its Performance Baselines subsection is non-empty (not the "omit entirely when no measurable
+      baseline exists" case). When triggered, emit a table of budgeted components: component/
+      surface, baseline metric + value, threshold (the point past which a regression is a
+      `V-PERF-02` finding), source citation (carried over from the analysis note). This promotes
+      the existing investigator→planner data flow ("fold its performance-baseline findings into
+      risk framing", Codebase Conventions bullet above) into a first-class, reviewer-auditable
+      section instead of leaving it as unstructured prose — it does not add a second investigator
+      consumption path (`V-DRY-01`: same data, new presentation). When not triggered, omit the
+      section entirely, same discipline as Threat Model above.
   *   **Execution Strategy (Stop Conditions)**: Scoped risk-mitigation rules (e.g. "if schema generated migration lacks column X, abort").
   *   **Sprint Contract**: Clear definition of done (e.g. all tests and linters pass).
 
@@ -342,6 +367,12 @@ instructions: |
   ...
 
   ## [Standard Only] Database/API Schema Changes
+  ...
+
+  ## [Standard + security-sensitive Only] Threat Model
+  ...
+
+  ## [Standard + perf-sensitive Only] Performance Budget
   ...
 
   ## [Standard Only] Execution Strategy & Stop Conditions

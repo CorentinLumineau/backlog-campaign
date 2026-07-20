@@ -101,3 +101,13 @@ describe('blackhole-vcodes.md — V-AUTO-01/V-AUTO-02 registration', () => {
     expect(vcodes).toMatch(/\| V-AUTO-02 \|.*\| WARN \|/);
   });
 });
+
+describe('blackhole-vcodes.md — V-THREAT-02/03 and V-PERF-01/02 registration', () => {
+  test('vcodes table has V-THREAT-02 (BLOCK), V-THREAT-03 (WARN), V-PERF-01 (BLOCK), and V-PERF-02 (WARN) rows', () => {
+    const vcodes = read('src/references/blackhole-vcodes.md');
+    expect(vcodes).toMatch(/\| V-THREAT-02 \|.*\| BLOCK \|/);
+    expect(vcodes).toMatch(/\| V-THREAT-03 \|.*\| WARN \|/);
+    expect(vcodes).toMatch(/\| V-PERF-01 \|.*\| BLOCK \|/);
+    expect(vcodes).toMatch(/\| V-PERF-02 \|.*\| WARN \|/);
+  });
+});

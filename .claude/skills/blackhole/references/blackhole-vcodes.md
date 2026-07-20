@@ -41,6 +41,10 @@ longer definitions (token cost, drift). Persist every finding to
 | V-SCOPE-01 | No refactoring untouched code | WARN |
 | V-SCOPE-02 | Touch-Paths violation — files modified outside plan scope | WARN |
 | V-API-01 | API contract drift — public interface diverges from plan | BLOCK |
+| V-THREAT-02 | Threat Model — every HIGH/CRITICAL-severity threat has mitigation status 'Mitigated' | BLOCK |
+| V-THREAT-03 | Threat Model — all six STRIDE categories evaluated (Spoofing, Tampering, Repudiation, Info Disclosure, DoS, Elevation of Privilege) | WARN |
+| V-PERF-01 | Performance Budget — no N+1 queries, unindexed sorts, sync I/O in hot path, full-table scans, or unbounded pagination for a budgeted component | BLOCK |
+| V-PERF-02 | Performance Budget — diff touching a budgeted component does not regress against its documented threshold | WARN |
 | V-BRANCH-01 | Force-push to protected branches (main, master, release/*) | BLOCK |
 | V-BRANCH-02 | Direct commit to main/master without review and approval | BLOCK |
 | V-BRANCH-03 | Branch name does not match blackhole/issue-N convention | WARN |

@@ -4,7 +4,7 @@
   "status": "active",
   "created": "2026-07-20T00:00:00Z",
   "lastUpdated": "2026-07-20T00:00:00Z",
-  "currentMilestone": "M5 (deferred — BREAKING, needs green campaign + human T3 sign-off)",
+  "currentMilestone": "COMPLETE (M5 flipped 2c6d24e; T3 live-campaign verification still pending)",
   "executionMode": "mercure-initiative",
   "goal": "blackhole as autonomous mercure over a shared artifact substrate: same code quality, interrupts only when needed, decisions banked durably for future implementations",
   "sources": [
@@ -108,9 +108,11 @@
         "M3",
         "M4"
       ],
-      "status": "blocked",
+      "status": "completed",
       "tasksTotal": 3,
-      "tasksComplete": 0,
+      "tasksComplete": 2,
+      "t3Pending": "T3 live-campaign verification (4 criteria) not yet observed — Entry-Gate row 6 green campaign was waived by maintainer; verify on next campaign",
+      "mergedCommit": "2c6d24e",
       "file": "documentation/milestones/_active/companion-substrate-closure/milestone-5.md",
       "summary": "enabled:true, brainstorm_routing pinned false; ONLY BREAKING change; lands alone after one green campaign",
       "planStatus": "planned"

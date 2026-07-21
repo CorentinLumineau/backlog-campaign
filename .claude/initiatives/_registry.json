@@ -36,9 +36,9 @@
       "blockedBy": [],
       "created": "2026-07-20T00:00:00Z",
       "milestonesTotal": 6,
-      "milestonesComplete": 5,
-      "currentMilestone": "M5 (deferred)",
-      "note": "Execution mode: mercure initiative (NOT a blackhole self-campaign) \u2014 M0 modifies implementer.md/reviewer.md, so a self-hosted run would have the reviewer review a change to its own contract. M0/M1/M4/M2/M3 all merged to main (54d08f4, eed17e5, 1fb772e, 8f13aef, 48581f4). M5 (autonomy flip) DEFERRED \u2014 BREAKING, needs green campaign + human T3 sign-off."
+      "milestonesComplete": 6,
+      "currentMilestone": "COMPLETE (T3 verification pending)",
+      "note": "All 6 milestones merged to main. M0/M1/M4/M2/M3: 54d08f4, eed17e5, 1fb772e, 8f13aef, 48581f4. M5 autonomy flip (BREAKING) merged 2c6d24e by explicit maintainer decision \u2014 Entry-Gate row 6 (green campaign) WAIVED, T3 live-campaign verification (4 criteria) still outstanding, observe on next campaign; rollback autonomy.enabled:false. Execution mode: mercure initiative (NOT a blackhole self-campaign)."
     }
   ],
   "archived": [

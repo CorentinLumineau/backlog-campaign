@@ -7,10 +7,8 @@
   agent) → review → green `bun run verify` + `bun run build` + `bun test` → merge to main → next.
 - Run as a **mercure initiative, NOT a blackhole self-campaign** (milestones edit blackhole's own
   agent contracts; a self-campaign would review changes to its own contract).
-- Currently: **11 of 12 milestones merged.** All 10 autonomous + CSC-M5 autonomy flip (merged
-  2c6d24e per explicit maintainer go-ahead; T3 live-campaign verification PENDING). Only **MPP-M6**
-  (live sweep, files real GitHub issues) remains — awaiting explicit user go-ahead.
-- Main pushed to origin (per user).
+- **ALL 12 MILESTONES COMPLETE — merged and pushed to origin/main (001d8da).** Both initiatives
+  ready for /x-archive. One follow-up owed: CSC-M5's T3 live-campaign verification (below).
 
 ## Green baseline (main @ 22a84bb)
 - `bun run verify` → 28/28
@@ -34,8 +32,14 @@ This is the regression gate for every milestone.
 - CSC-M5 autonomy.enabled flip — DONE (merged 2c6d24e, maintainer waived the green-campaign gate).
   ⚠️ T3 live-campaign verification (4 criteria) still to be observed on the next real campaign.
   Rollback: `autonomy.enabled: false`.
-- MPP-M6 first matrix-driven backlog sweep — STILL PENDING; runs prj-mercure-sync live; files real
-  GitHub issues on CorentinLumineau/blackhole. Needs explicit go-ahead (or read-only-first).
+- MPP-M6 first matrix-driven backlog sweep — DONE (merged 001d8da, read-only-first then approved).
+  Target PM-028 (V-TEST-09 coverage gate) ADOPT → filed GitHub #306; corrected stale PM-010/045
+  gap→covered (M3 had resolved them). GAP-6 was already covered (PM-004).
+
+## Outstanding follow-up
+- **CSC-M5 T3 verification**: run one real campaign with autonomy live, confirm the 4 criteria
+  (milestone-5.md § T3). Rollback if needed: `autonomy.enabled: false`.
+- **#306** (V-TEST-09 coverage-regression gate) is an open backlog issue to implement later.
 
 ## Completed Milestones
 - **CSC-M0** (ADR-011 accretion control) — merged `54d08f4`. reviewer.md §5 3-form Reuse Check

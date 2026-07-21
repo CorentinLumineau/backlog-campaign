@@ -18,9 +18,9 @@
       "blockedBy": [],
       "created": "2026-07-20T00:00:00Z",
       "milestonesTotal": 6,
-      "milestonesComplete": 5,
-      "currentMilestone": "M6 (deferred)",
-      "note": "M1-M5 all merged to main (8d0842b, 3a87aba, bf875a4, a808875, 4e20a79). M6 (live backlog sweep) DEFERRED — runs prj-mercure-sync live and files real GitHub issues, gated to user. Execution mode: mercure initiative (NOT a blackhole self-campaign)."
+      "milestonesComplete": 6,
+      "currentMilestone": "COMPLETE — ready for /x-archive",
+      "note": "All 6 merged+pushed. M1-M5: 8d0842b, 3a87aba, bf875a4, a808875, 4e20a79. M6 first backlog-mode sweep 001d8da — PM-028 (V-TEST-09) ADOPT → filed #306; corrected stale PM-010/045 gap→covered. Execution mode: mercure initiative (NOT a blackhole self-campaign)."
     },
     {
       "name": "companion-substrate-closure",
